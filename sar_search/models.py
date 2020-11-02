@@ -6,6 +6,8 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
+
+from lib.functions.custom_functions import listrify
 from shared_models import models as shared_models
 from shapely.geometry import Polygon, Point, LineString
 
@@ -316,7 +318,7 @@ class Record(models.Model):
 
     species = models.ForeignKey(Species, on_delete=models.DO_NOTHING, related_name='records', blank=True, null=True)
     name = models.CharField(max_length=255, verbose_name=_("record name"))
-    regions = models.ManyToManyField(Region, blank=True, related_name="records")
+    regions = models.ManyToManyField(Region, blank=True, related_name="regions")
     record_type = models.IntegerField(verbose_name=_("record type"), choices=RANGE_TYPE_CHOICES)
     source = models.CharField(max_length=1000, verbose_name=_("source"))
     year = models.CharField(max_length=1000, verbose_name=_("source year"), blank=True, null=True)
@@ -351,7 +353,29 @@ class Record(models.Model):
             return {"x": my_polygon.centroid.coords[0][0],
                     "y": my_polygon.centroid.coords[0][1]}
 
+    @property
+    def region_list(self):
+        """get a comma delimited list of regions from M2M"""
+        # r = self.regions.all()
+        #
+        # for obj in r:
+        #     region_list = ', '.join([obj.name for obj in obj.regions.all()])
+        # return region_list
+        return listrify([r for r in self.regions.all()])
 
+    @property
+    def latlong(self):
+        """get a comma delimited list of points related to record"""
+        # lat = self.points.first().latitude_n
+        # long = self.points.first().longitude_w
+        #
+        # my_str = "{},{}".format(lat, long)
+        # empty = "None"
+        # if self.points.count() > 0:
+        #     return my_str
+        # else:
+        #     return empty
+        listrify([p for p in self.points.all()])
 #
 # @receiver(models.signals.post_delete, sender=Record)
 # def auto_delete_file_on_delete(sender, instance, **kwargs):
@@ -403,3 +427,17 @@ class RecordPoints(models.Model):
     @property
     def point(self):
         return Point(self.latitude_n, self.longitude_w)
+
+    @property
+    def latlong(self):
+        """get a comma delimited list of points related to record"""
+        # lat = self.points.first().latitude_n
+        # long = self.points.first().longitude_w
+        #
+        # my_str = "{},{}".format(lat, long)
+        # empty = "None"
+        # if self.points.count() > 0:
+        #     return my_str
+        # else:
+        #     return empty
+        listrify([p for p in self.points.all()])

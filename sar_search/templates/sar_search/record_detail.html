@@ -39,7 +39,7 @@
             <a class="btn btn-warning" href="{% url 'sar_search:record_edit' object.id %}">Edit</a>
             <a class="btn btn-danger" href="{% url 'sar_search:record_delete' object.id %}">Delete</a>
             <a class="btn btn-primary" href="{% url 'sar_search:manage_coords' object.id %}">Set / Modify Coordinates</a>
-
+            <a class="btn btn-secondary" href="{% url 'sar_search:generate_coord_record' object.id %}">Export Coords to CSV</a>
             {% if not object.record_type == 1 %}
                 <a class="btn btn-success" href="#" pop-href="{% url 'sar_search:file_import' object.id %}">Import Points from CSV</a>
 

@@ -54,6 +54,9 @@
             <a class="btn btn-success" href="#" pop-href="{% url 'sar_search:file_import' object.id %}">
                 {% trans "Import Records from CSV" %}
             </a>
+            <a class="btn btn-secondary" href="{% url 'sar_search:generate_species_record' object.id %}">
+                {% trans "Export Records to CSV" %}
+            </a>
         </div>
 
 

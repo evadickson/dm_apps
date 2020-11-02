@@ -50,6 +50,8 @@ urlpatterns = [
     path('species/<int:pk>/edit/', views.SpeciesUpdateView.as_view(), name="species_edit"),
     path('species/<int:pk>/delete/', views.SpeciesDeleteView.as_view(), name="species_delete"),
     path('species/<int:pk>/import-points-from-file/', views.RecordImportFileView.as_view(), name="file_import"),
+    path('species/<int:pk>/download/', views.generate_species_record, name="generate_species_record"),
+    path('record/<int:pk>/download/', views.generate_coord_record, name="generate_coord_record"),
 
     # RECORD #
     ##########
