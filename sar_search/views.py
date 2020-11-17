@@ -801,42 +801,68 @@ def delete_authority(request, pk):
 
 @login_required(login_url='/accounts/login/')
 # @user_passes_test(in_sar_search_admin_group, login_url='/accounts/denied/')
-# def generate_species_record(pk):
-#     """ create a csv of the species record(s) """
-#     species = get_object_or_404(models.Species, pk=pk)
-#     # Create the HttpResponse object with the appropriate CSV header.
-#     response = HttpResponse(content_type='text/csv')
-#     response['Content-Disposition'] = f'attachment; filename="{species.tname}_record_{timezone.now().strftime("%Y_%m_%d")}.csv"'
-#     writer = csv.writer(response)
-#     fieldlist = [
-#         'tname|{}'.format(_("Common name")),
-#         'scientific_name',
-#         'tpopulation|{}'.format(_("Population")),
-#         'tsn',
-#         'taxon',
-#         'sara_status',
-#         'nb_status',
-#         'ns_status',
-#         'iucn_red_list_status',
-#         'cosewic_status',
-#         'sara_schedule',
-#         'cites_appendix',
-#         'province_range',
-#         'responsible_authority',
-#         'tnotes|{}'.format(_("Notes")),
-#
-#         'species',
-#         'name',
-#         'regions',
-#     ]
-#     if species.records.exists():
-#         header_row = [get_verbose_label(species.records.first(), field).lower() for field in fieldlist]
-#         writer.writerow(header_row)
-#         for t in species.records.all():
-#             data_row = [get_field_value(t, field) for field in fieldlist]
-#             writer.writerow(data_row)
-#
-#     return response
+def generate_species_record(request, pk):
+    """ create a csv of the species record(s) """
+    species = get_object_or_404(models.Species, pk=pk)
+
+    # record = get_object_or_404(models.Record, pk=self.kwargs.get("species"))
+
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{species.tname}_record_{timezone.now().strftime("%Y_%m_%d")}.csv"'
+    writer = csv.writer(response)
+    species_field_list = [
+        'tname|{}'.format(_("Common name")),
+        'scientific_name',
+        'tpopulation|{}'.format(_("Population")),
+        'tsn',
+        'taxon',
+        'sara_status',
+        'nb_status',
+        'ns_status',
+        'iucn_red_list_status',
+        'cosewic_status',
+        'sara_schedule',
+        'cites_appendix',
+        'province_range',
+        'responsible_authority',
+        'tnotes|{}'.format(_("Notes")),
+        ]
+
+    record_field_list = [
+        'species',
+        'name',
+        'regions',
+        'source',
+        ]
+
+    # write the header information
+    species_field_list = ["name", "nom", " popo"]
+    for f in field:
+        writer.writerow([get_verbose_label(f), get_field_value(species, f)])
+
+
+    writer.writerow(['French Name', species.common_name_fre])
+    writer.writerow(['Population Eng', species.population_eng])
+
+    for c in species.records.all():
+        writer.writerow(['test', c.points.count()])
+
+    # header_row = [get_verbose_label(object, field).lower() for field in species_field_list]
+    # writer.writerow(header_row)
+    # data_row = [get_field_value(object, field) for field in species_field_list]
+    # writer.writerow(data_row)
+
+    writer.writerow(["", ])
+
+    if species.records.exists():
+        header_row = [get_verbose_label(species.records.first(), field).lower() for field in record_field_list]
+        writer.writerow(header_row)
+        for t in species.records.all():
+            data_row = [get_field_value(t, field) for field in record_field_list]
+            writer.writerow(data_row)
+
+    return response
 
 def generate_coord_record(request, pk):
     m = models.Record.objects.get(pk=pk)
@@ -848,43 +874,43 @@ def generate_coord_record(request, pk):
     writer = csv.writer(response)
 
     for p in m.points.all():
-        writer.writerow(['test', p.name, p.latitude_n, p.longitude_w])
+        writer.writerow(['test', p.name, p.latitude_n, p.longitude_w, p.point])
     return response
 
 
-def generate_species_record(request, pk):
-    # create instance of species:
-    m = models.Species.objects.get(pk=pk)
-    # rec = models.Record.objects.filter(species=self.kwargs['pk'])
-
-    # Create the HttpResponse object with the appropriate CSV header.
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="{}.csv"'.format(slugify(m.tname))
-
-    writer = csv.writer(response)
-
-    # write the header information
-    writer.writerow(['English Name', m.common_name_eng])
-    writer.writerow(['French Name', m.common_name_fre])
-    writer.writerow(['Population Eng', m.population_eng])
-
-
-    # write the header for the records table
-    writer.writerow(["", ])
-    writer.writerow([
-        "name",
-        "regions",
-        "coordinates",
-    ])
-
-    for r in m.records.all():
-
-        writer.writerow(
-            [
-                r.name,
-                r.region_list,
-                r.latlong,
-            ])
+# def generate_species_record(request, pk):
+#     # create instance of species:
+#     m = models.Species.objects.get(pk=pk)
+#     # rec = models.Record.objects.filter(species=self.kwargs['pk'])
+#
+#     # Create the HttpResponse object with the appropriate CSV header.
+#     response = HttpResponse(content_type='text/csv')
+#     response['Content-Disposition'] = 'attachment; filename="{}.csv"'.format(slugify(m.tname))
+#
+#     writer = csv.writer(response)
+#
+#     # write the header information
+#     writer.writerow(['English Name', m.common_name_eng])
+#     writer.writerow(['French Name', m.common_name_fre])
+#     writer.writerow(['Population Eng', m.population_eng])
+#
+#
+#     # write the header for the records table
+#     writer.writerow(["", ])
+#     writer.writerow([
+#         "name",
+#         "regions",
+#         "coordinates",
+#     ])
+#
+#     for r in m.records.all():
+#
+#         writer.writerow(
+#             [
+#                 r.name,
+#                 r.region_list,
+#                 r.latlong,
+#             ])
 
     # write the header for the points table
     # writer.writerow(["", ])
@@ -899,4 +925,4 @@ def generate_species_record(request, pk):
     #             r.latlong
     #         ])
     #
-    return response
+    # return response

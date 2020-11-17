@@ -440,4 +440,4 @@ class RecordPoints(models.Model):
         #     return my_str
         # else:
         #     return empty
-        listrify([p for p in self.points.all()])
+
