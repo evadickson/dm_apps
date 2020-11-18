@@ -858,14 +858,17 @@ def generate_species_record(request, pk):
 
     record_field_list = [
         'id',
+        'record_type',
         'species',
         'name',
         'regions',
         'source',
+        'year',
     ]
 
     points_field_list = [
-        'record__id',
+        'record_id',
+        'name',
         'latitude_n',
         'longitude_w',
     ]
@@ -888,21 +891,11 @@ def generate_species_record(request, pk):
     # blank row
     writer.writerow(["", ])
 
+    # write the coordinate information for all the records, can be referenced using the 'id' column
     for c in species.records.all():
-        writer.writerow(['test', c.points.first().latitude_n])
-
-    # blank row
-    writer.writerow(["", ])
-    for c in species.records.all():
-        writer.writerow(['test', listrify([r for r in c.points.all()])])
-
-    #
-    #
-    # # write the coordinate information for all the records, can be referenced using the 'id' column
-    # for p in species.records.all():
-    #     data_row = [get_field_value(p, field) for field in points_field_list]
-    #     writer.writerow(data_row)
-
+        for a in c.points.all():
+            data_row = [get_field_value(a, field) for field in points_field_list]
+            writer.writerow(data_row)
 
     return response
 
@@ -919,52 +912,3 @@ def generate_coord_record(request, pk):
     for p in m.points.all():
         writer.writerow(['test', p.name, p.latitude_n, p.longitude_w, p.point])
     return response
-
-# def generate_species_record(request, pk):
-#     # create instance of species:
-#     m = models.Species.objects.get(pk=pk)
-#     # rec = models.Record.objects.filter(species=self.kwargs['pk'])
-#
-#     # Create the HttpResponse object with the appropriate CSV header.
-#     response = HttpResponse(content_type='text/csv')
-#     response['Content-Disposition'] = 'attachment; filename="{}.csv"'.format(slugify(m.tname))
-#
-#     writer = csv.writer(response)
-#
-#     # write the header information
-#     writer.writerow(['English Name', m.common_name_eng])
-#     writer.writerow(['French Name', m.common_name_fre])
-#     writer.writerow(['Population Eng', m.population_eng])
-#
-#
-#     # write the header for the records table
-#     writer.writerow(["", ])
-#     writer.writerow([
-#         "name",
-#         "regions",
-#         "coordinates",
-#     ])
-#
-#     for r in m.records.all():
-#
-#         writer.writerow(
-#             [
-#                 r.name,
-#                 r.region_list,
-#                 r.latlong,
-#             ])
-
-# write the header for the points table
-# writer.writerow(["", ])
-# writer.writerow([
-#     "test"
-# ])
-#
-# for r in rec.points.all():
-#
-#     writer.writerow(
-#         [
-#             r.latlong
-#         ])
-#
-# return response
