@@ -353,6 +353,8 @@ class Record(models.Model):
             return {"x": my_polygon.centroid.coords[0][0],
                     "y": my_polygon.centroid.coords[0][1]}
 
+
+
     @property
     def region_list(self):
         """get a comma delimited list of regions from M2M"""

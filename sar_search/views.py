@@ -16,6 +16,7 @@ from django.views.generic import UpdateView, DeleteView, CreateView, DetailView,
 from django_filters.views import FilterView
 from shapely.geometry import box
 
+from lib.functions.custom_functions import listrify
 from lib.templatetags.verbose_names import get_verbose_label, get_field_value
 from . import models
 from . import forms
@@ -47,7 +48,6 @@ def in_sar_search_admin_group(user):
 
 
 class SARSearchAdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-
 
     def test_func(self):
         return in_sar_search_admin_group(self.request.user)
@@ -245,7 +245,8 @@ def manage_rp_coords(request, region_polygon):
             formset.save()
             # do something with the formset.cleaned_data
             messages.success(request, "coords have been successfully updated")
-            return HttpResponseRedirect(reverse("sar_search:manage_rp_coords", kwargs={"region_polygon": region_polygon}))
+            return HttpResponseRedirect(
+                reverse("sar_search:manage_rp_coords", kwargs={"region_polygon": region_polygon}))
     else:
         formset = forms.RPCoordFormSet(
             queryset=qs,
@@ -269,7 +270,8 @@ def manage_rp_coords(request, region_polygon):
 def delete_rp_coord(request, pk):
     my_obj = models.RegionPolygonPoint.objects.get(pk=pk)
     my_obj.delete()
-    return HttpResponseRedirect(reverse("sar_search:manage_rp_coords", kwargs={"region_polygon": my_obj.region_polygon.id}))
+    return HttpResponseRedirect(
+        reverse("sar_search:manage_rp_coords", kwargs={"region_polygon": my_obj.region_polygon.id}))
 
 
 class RegionPolygonImportFileView(SARSearchAdminRequiredMixin, UpdateView):
@@ -320,7 +322,8 @@ class SpeciesListView(SARSearchAccessRequiredMixin, FilterView):
 
     def get_queryset(self):
         return models.Species.objects.annotate(
-            search_term=Concat('common_name_eng', 'common_name_fre', 'scientific_name', output_field=TextField())).order_by(
+            search_term=Concat('common_name_eng', 'common_name_fre', 'scientific_name',
+                               output_field=TextField())).order_by(
             _("common_name_eng"))
 
     def get_context_data(self, **kwargs):
@@ -805,11 +808,10 @@ def generate_species_record(request, pk):
     """ create a csv of the species record(s) """
     species = get_object_or_404(models.Species, pk=pk)
 
-    # record = get_object_or_404(models.Record, pk=self.kwargs.get("species"))
-
     # Create the HttpResponse object with the appropriate CSV header.
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="{species.tname}_record_{timezone.now().strftime("%Y_%m_%d")}.csv"'
+    response[
+        'Content-Disposition'] = f'attachment; filename="{species.tname}_record_{timezone.now().strftime("%Y_%m_%d")}.csv"'
     writer = csv.writer(response)
     species_field_list = [
         'tname|{}'.format(_("Common name")),
@@ -827,34 +829,30 @@ def generate_species_record(request, pk):
         'province_range',
         'responsible_authority',
         'tnotes|{}'.format(_("Notes")),
-        ]
+    ]
 
     record_field_list = [
+        'id',
         'species',
         'name',
         'regions',
         'source',
-        ]
+    ]
 
-    # write the header information
-    species_field_list = ["name", "nom", " popo"]
-    for f in field:
-        writer.writerow([get_verbose_label(f), get_field_value(species, f)])
+    points_field_list = [
+        'record__id',
+        'latitude_n',
+        'longitude_w',
+    ]
 
+    # write the general information for the species
+    for f in species_field_list:
+        writer.writerow([get_verbose_label(species, f), get_field_value(species, f)])
 
-    writer.writerow(['French Name', species.common_name_fre])
-    writer.writerow(['Population Eng', species.population_eng])
-
-    for c in species.records.all():
-        writer.writerow(['test', c.points.count()])
-
-    # header_row = [get_verbose_label(object, field).lower() for field in species_field_list]
-    # writer.writerow(header_row)
-    # data_row = [get_field_value(object, field) for field in species_field_list]
-    # writer.writerow(data_row)
-
+    # blank row
     writer.writerow(["", ])
 
+    # write the information for the records attached to this species
     if species.records.exists():
         header_row = [get_verbose_label(species.records.first(), field).lower() for field in record_field_list]
         writer.writerow(header_row)
@@ -862,7 +860,27 @@ def generate_species_record(request, pk):
             data_row = [get_field_value(t, field) for field in record_field_list]
             writer.writerow(data_row)
 
+    # blank row
+    writer.writerow(["", ])
+
+    for c in species.records.all():
+        writer.writerow(['test', c.points.first().latitude_n])
+
+    # blank row
+    writer.writerow(["", ])
+    for c in species.records.all():
+        writer.writerow(['test', listrify([r for r in c.points.all()])])
+
+
+
+    # write the coordinate information for all the records, can be referenced using the 'id' column
+    # for p in species.records.all():
+    #     data_row = [get_field_value(p, field) for field in points_field_list]
+    #     writer.writerow(data_row)
+    #
+
     return response
+
 
 def generate_coord_record(request, pk):
     m = models.Record.objects.get(pk=pk)
@@ -876,7 +894,6 @@ def generate_coord_record(request, pk):
     for p in m.points.all():
         writer.writerow(['test', p.name, p.latitude_n, p.longitude_w, p.point])
     return response
-
 
 # def generate_species_record(request, pk):
 #     # create instance of species:
@@ -912,17 +929,17 @@ def generate_coord_record(request, pk):
 #                 r.latlong,
 #             ])
 
-    # write the header for the points table
-    # writer.writerow(["", ])
-    # writer.writerow([
-    #     "test"
-    # ])
-    #
-    # for r in rec.points.all():
-    #
-    #     writer.writerow(
-    #         [
-    #             r.latlong
-    #         ])
-    #
-    # return response
+# write the header for the points table
+# writer.writerow(["", ])
+# writer.writerow([
+#     "test"
+# ])
+#
+# for r in rec.points.all():
+#
+#     writer.writerow(
+#         [
+#             r.latlong
+#         ])
+#
+# return response
