@@ -24,6 +24,9 @@ from . import filters
 
 
 # open basic access up to anybody who is logged in
+from .models import Species, Record, RecordPoints
+
+
 def in_sar_search_group(user):
     if user.id:
         # return user.groups.filter(name='sar_search_access').count() != 0
@@ -806,6 +809,28 @@ def delete_authority(request, pk):
 # @user_passes_test(in_sar_search_admin_group, login_url='/accounts/denied/')
 def generate_species_record(request, pk):
     """ create a csv of the species record(s) """
+
+# Use this one to get Species, Records and Points all in one table with repeated values
+
+    # response = HttpResponse(content_type='text/csv')
+    # response[
+    #     'Content-Disposition'] = f'attachment; filename="record_{timezone.now().strftime("%Y_%m_%d")}.csv"'
+    # writer = csv.writer(response)
+    #
+    # species_fields = [x.name for x in Species._meta.concrete_fields]
+    # record_fields = ['records__{}'.format(x.name) for x in Record._meta.concrete_fields]
+    # points_fields = ['records__points__{}'.format(x.name) for x in RecordPoints._meta.concrete_fields]
+    #
+    # all_fields = species_fields + record_fields + points_fields
+    # species_list = list(Species.objects.values_list(*all_fields))
+    #
+    # for _list in species_list:
+    #     writer.writerow(_list)
+    #
+    # return response
+
+# This one has more formatting than the previous
+
     species = get_object_or_404(models.Species, pk=pk)
 
     # Create the HttpResponse object with the appropriate CSV header.
@@ -871,13 +896,13 @@ def generate_species_record(request, pk):
     for c in species.records.all():
         writer.writerow(['test', listrify([r for r in c.points.all()])])
 
-
-
-    # write the coordinate information for all the records, can be referenced using the 'id' column
+    #
+    #
+    # # write the coordinate information for all the records, can be referenced using the 'id' column
     # for p in species.records.all():
     #     data_row = [get_field_value(p, field) for field in points_field_list]
     #     writer.writerow(data_row)
-    #
+
 
     return response
 
