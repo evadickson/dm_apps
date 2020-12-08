@@ -812,92 +812,92 @@ def generate_species_record(request, pk):
 
 # Use this one to get Species, Records and Points all in one table with repeated values
 
-    # response = HttpResponse(content_type='text/csv')
-    # response[
-    #     'Content-Disposition'] = f'attachment; filename="record_{timezone.now().strftime("%Y_%m_%d")}.csv"'
-    # writer = csv.writer(response)
-    #
-    # species_fields = [x.name for x in Species._meta.concrete_fields]
-    # record_fields = ['records__{}'.format(x.name) for x in Record._meta.concrete_fields]
-    # points_fields = ['records__points__{}'.format(x.name) for x in RecordPoints._meta.concrete_fields]
-    #
-    # all_fields = species_fields + record_fields + points_fields
-    # species_list = list(Species.objects.values_list(*all_fields))
-    #
-    # for _list in species_list:
-    #     writer.writerow(_list)
-    #
-    # return response
+    response = HttpResponse(content_type='text/csv')
+    response[
+        'Content-Disposition'] = f'attachment; filename="record_{timezone.now().strftime("%Y_%m_%d")}.csv"'
+    writer = csv.writer(response)
+
+    species_fields = [x.name for x in Species._meta.concrete_fields]
+    record_fields = ['records__{}'.format(x.name) for x in Record._meta.concrete_fields]
+    points_fields = ['records__points__{}'.format(x.name) for x in RecordPoints._meta.concrete_fields]
+
+    all_fields = species_fields + record_fields + points_fields
+    species_list = list(Species.objects.values_list(*all_fields))
+
+    for _list in species_list:
+        writer.writerow(_list)
+
+    return response
 
 # This one has more formatting than the previous
 
-    species = get_object_or_404(models.Species, pk=pk)
-
-    # Create the HttpResponse object with the appropriate CSV header.
-    response = HttpResponse(content_type='text/csv')
-    response[
-        'Content-Disposition'] = f'attachment; filename="{species.tname}_record_{timezone.now().strftime("%Y_%m_%d")}.csv"'
-    writer = csv.writer(response)
-    species_field_list = [
-        'tname|{}'.format(_("Common name")),
-        'scientific_name',
-        'tpopulation|{}'.format(_("Population")),
-        'tsn',
-        'taxon',
-        'sara_status',
-        'nb_status',
-        'ns_status',
-        'iucn_red_list_status',
-        'cosewic_status',
-        'sara_schedule',
-        'cites_appendix',
-        'province_range',
-        'responsible_authority',
-        'tnotes|{}'.format(_("Notes")),
-    ]
-
-    record_field_list = [
-        'id',
-        'record_type',
-        'species',
-        'name',
-        'regions',
-        'source',
-        'year',
-    ]
-
-    points_field_list = [
-        'record_id',
-        'name',
-        'latitude_n',
-        'longitude_w',
-    ]
-
-    # write the general information for the species
-    for f in species_field_list:
-        writer.writerow([get_verbose_label(species, f), get_field_value(species, f)])
-
-    # blank row
-    writer.writerow(["", ])
-
-    # write the information for the records attached to this species
-    if species.records.exists():
-        header_row = [get_verbose_label(species.records.first(), field).lower() for field in record_field_list]
-        writer.writerow(header_row)
-        for t in species.records.all():
-            data_row = [get_field_value(t, field) for field in record_field_list]
-            writer.writerow(data_row)
-
-    # blank row
-    writer.writerow(["", ])
-
-    # write the coordinate information for all the records, can be referenced using the 'id' column
-    for c in species.records.all():
-        for a in c.points.all():
-            data_row = [get_field_value(a, field) for field in points_field_list]
-            writer.writerow(data_row)
-
-    return response
+    # species = get_object_or_404(models.Species, pk=pk)
+    #
+    # # Create the HttpResponse object with the appropriate CSV header.
+    # response = HttpResponse(content_type='text/csv')
+    # response[
+    #     'Content-Disposition'] = f'attachment; filename="{species.tname}_record_{timezone.now().strftime("%Y_%m_%d")}.csv"'
+    # writer = csv.writer(response)
+    # species_field_list = [
+    #     'tname|{}'.format(_("Common name")),
+    #     'scientific_name',
+    #     'tpopulation|{}'.format(_("Population")),
+    #     'tsn',
+    #     'taxon',
+    #     'sara_status',
+    #     'nb_status',
+    #     'ns_status',
+    #     'iucn_red_list_status',
+    #     'cosewic_status',
+    #     'sara_schedule',
+    #     'cites_appendix',
+    #     'province_range',
+    #     'responsible_authority',
+    #     'tnotes|{}'.format(_("Notes")),
+    # ]
+    #
+    # record_field_list = [
+    #     'id',
+    #     'record_type',
+    #     'species',
+    #     'name',
+    #     'regions',
+    #     'source',
+    #     'year',
+    # ]
+    #
+    # points_field_list = [
+    #     'record_id',
+    #     'name',
+    #     'latitude_n',
+    #     'longitude_w',
+    # ]
+    #
+    # # write the general information for the species
+    # for f in species_field_list:
+    #     writer.writerow([get_verbose_label(species, f), get_field_value(species, f)])
+    #
+    # # blank row
+    # writer.writerow(["", ])
+    #
+    # # write the information for the records attached to this species
+    # if species.records.exists():
+    #     header_row = [get_verbose_label(species.records.first(), field).lower() for field in record_field_list]
+    #     writer.writerow(header_row)
+    #     for t in species.records.all():
+    #         data_row = [get_field_value(t, field) for field in record_field_list]
+    #         writer.writerow(data_row)
+    #
+    # # blank row
+    # writer.writerow(["", ])
+    #
+    # # write the coordinate information for all the records, can be referenced using the 'id' column
+    # for c in species.records.all():
+    #     for a in c.points.all():
+    #         data_row = [get_field_value(a, field) for field in points_field_list]
+    #         writer.writerow(data_row)
+    #
+    # return response
 
 
 def generate_coord_record(request, pk):
