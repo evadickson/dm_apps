@@ -34,9 +34,18 @@ def get_ind_organizations():
     return ml_models.Organization.objects.filter(grouping__is_indigenous=True).distinct()
 
 
+def get_mar_organzations():
+    return ml_models.Organization.objects.all().distinct()
+
+
 def in_ihub_admin_group(user):
     if user:
         return user.groups.filter(name='ihub_admin').count() != 0
+
+
+def in_mar_admin_group(user):
+    if user:
+        return user.groups.filter(name='maret_admin').count() != 0
 
 
 class iHubAdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -212,16 +221,7 @@ class PersonDeleteView(iHubAdminRequiredMixin, CommonDeleteView):
 class OrganizationListView(SiteLoginRequiredMixin, CommonFilterView):
     template_name = 'ihub/organization_list.html'
     filterset_class = filters.OrganizationFilter
-    queryset = get_ind_organizations().annotate(
-        search_term=Concat(
-            'name_eng', Value(" "),
-            'abbrev', Value(" "),
-            'name_ind', Value(" "),
-            'former_name', Value(" "),
-            'province__name', Value(" "),
-            'province__nom', Value(" "),
-            'province__abbrev_eng', Value(" "),
-            'province__abbrev_fre', output_field=TextField()))
+
     paginate_by = 25
     field_list = [
         {"name": 'name_eng', "class": "", "width": ""},
@@ -236,6 +236,22 @@ class OrganizationListView(SiteLoginRequiredMixin, CommonFilterView):
     new_object_url_name = "ihub:org_new"
     row_object_url_name = "ihub:org_detail"
     container_class = "container-fluid"
+
+    def get_queryset(self):
+        orgs = get_ind_organizations() if in_ihub_admin_group(self.request.user) else get_mar_organzations()
+
+        queryset = orgs.annotate(
+            search_term=Concat(
+                'name_eng', Value(" "),
+                'abbrev', Value(" "),
+                'name_ind', Value(" "),
+                'former_name', Value(" "),
+                'province__name', Value(" "),
+                'province__nom', Value(" "),
+                'province__abbrev_eng', Value(" "),
+                'province__abbrev_fre', output_field=TextField()))
+
+        return queryset
 
 
 class OrganizationDetailView(SiteLoginRequiredMixin, CommonDetailView):

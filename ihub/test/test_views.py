@@ -1,8 +1,9 @@
-from django.test import tag
+from django.test import tag, RequestFactory
 from django.urls import reverse_lazy
 from django.views.generic import TemplateView, DeleteView
 
 from ihub.test import FactoryFloor
+from shared_models.test import common_tests as shared_ct
 from ihub.test.common_tests import CommonIHubTest as CommonTest
 from masterlist import models as ml_models
 from shared_models.views import CommonPopoutCreateView, CommonPopoutDeleteView, CommonPopoutUpdateView, CommonCreateView, CommonDeleteView, \
@@ -13,7 +14,7 @@ from .. import views, models
 class TestConsultationInstructionCreateView(CommonTest):
     def setUp(self):
         super().setUp()
-        self.instance = FactoryFloor.OrganizationFactory()
+        self.instance = FactoryFloor.IOrganizationFactory()
         self.test_url = reverse_lazy('ihub:instruction_new', args=[self.instance.pk, ])
         self.expected_template = 'shared_models/generic_popout_form.html'
         self.user = self.get_and_login_user(in_group="ihub_edit")
@@ -85,7 +86,7 @@ class TestConsultationInstructionUpdateView(CommonTest):
 class TestConsultationRoleCreateView(CommonTest):
     def setUp(self):
         super().setUp()
-        self.instance1 = FactoryFloor.OrganizationFactory()
+        self.instance1 = FactoryFloor.IOrganizationFactory()
         self.instance2 = FactoryFloor.OrganizationMemberFactory()
         self.test_url = reverse_lazy('ihub:consultee_new', args=[self.instance1.pk, self.instance2.pk, ])
         self.expected_template = 'shared_models/generic_popout_form.html'
@@ -173,7 +174,7 @@ class TestEntryCreateView(CommonTest):
 
     @tag("Entry", "entry_new", "submit")
     def test_submit(self):
-        org = FactoryFloor.OrganizationFactory()
+        org = FactoryFloor.IOrganizationFactory()
         grouping = ml_models.Grouping.objects.filter(is_indigenous=True).first()
         org.grouping.add(grouping)
 
@@ -388,7 +389,7 @@ class TestEntryUpdateView(CommonTest):
     @tag("Entry", "entry_edit", "submit")
     def test_submit(self):
         # need to make sure the organization is
-        org = FactoryFloor.OrganizationFactory()
+        org = FactoryFloor.IOrganizationFactory()
         grouping = ml_models.Grouping.objects.filter(is_indigenous=True).first()
         org.grouping.add(grouping)
 
@@ -432,14 +433,14 @@ class TestOrganizationCreateView(CommonTest):
 
     @tag("Organization", "org_new", "submit")
     def test_submit(self):
-        data = FactoryFloor.OrganizationFactory.get_valid_data()
+        data = FactoryFloor.IOrganizationFactory.get_valid_data()
         self.assert_success_url(self.test_url, data=data, user=self.user)
 
 
 class TestOrganizationDeleteView(CommonTest):
     def setUp(self):
         super().setUp()
-        self.instance = FactoryFloor.OrganizationFactory()
+        self.instance = FactoryFloor.IOrganizationFactory()
         self.test_url = reverse_lazy('ihub:org_delete', args=[self.instance.pk, ])
         self.expected_template = 'ihub/confirm_delete.html'
         self.user = self.get_and_login_user(in_group="ihub_admin")
@@ -455,7 +456,7 @@ class TestOrganizationDeleteView(CommonTest):
 
     @tag("Organization", "org_delete", "submit")
     def test_submit(self):
-        data = FactoryFloor.OrganizationFactory.get_valid_data()
+        data = FactoryFloor.IOrganizationFactory.get_valid_data()
         self.assert_success_url(self.test_url, data=data, user=self.user)
 
         # for delete views...
@@ -465,7 +466,7 @@ class TestOrganizationDeleteView(CommonTest):
 class TestOrganizationDetailView(CommonTest):
     def setUp(self):
         super().setUp()
-        self.instance = FactoryFloor.OrganizationFactory()
+        self.instance = FactoryFloor.IOrganizationFactory()
         self.test_url = reverse_lazy('ihub:org_detail', args=[self.instance.pk, ])
         self.expected_template = 'ihub/organization_detail.html'
         self.user = self.get_and_login_user()
@@ -510,11 +511,51 @@ class TestOrganizationListView(CommonTest):
         ]
         self.assert_presence_of_context_vars(self.test_url, context_vars, user=self.user)
 
+    @tag("Organization", "org_list", "ihub_access")
+    def test_only_iorgs_iadmin(self):
+        # create 5 indigenous organizations
+        FactoryFloor.IOrganizationFactory.create_batch(5)
+
+        # create 5 non-indigenous organizations
+        FactoryFloor.OrganizationFactory.create_batch(5)
+
+        # login as ihub_admin
+        i_user = self.get_and_login_user(in_group='ihub_admin')
+
+        # check that only the 5 indigenous orgs are visible
+        request = RequestFactory().get(self.test_url)
+        request.user = i_user
+        view = views.OrganizationListView()
+        view = shared_ct.setup_view(view=view, request=request)
+
+        results = view.get_queryset()
+        self.assertEqual(5, len(results))
+
+    @tag("Organization", "org_list", "maret_access")
+    def test_only_orgs_maret(self):
+        # create 5 indigenous organizations
+        FactoryFloor.IOrganizationFactory.create_batch(5)
+
+        # create 5 non-indigenous organizations
+        FactoryFloor.OrganizationFactory.create_batch(5)
+
+        # login as ihub_admin
+        m_user = self.get_and_login_user(in_group='maret_admin')
+
+        # check all orgs are visible
+        request = RequestFactory().get(self.test_url)
+        request.user = m_user
+        view = views.OrganizationListView()
+        view = shared_ct.setup_view(view=view, request=request)
+
+        results = view.get_queryset()
+        self.assertEqual(10, len(results))
+
 
 class TestOrganizationMemberCreateView(CommonTest):
     def setUp(self):
         super().setUp()
-        self.instance = FactoryFloor.OrganizationFactory()
+        self.instance = FactoryFloor.IOrganizationFactory()
         self.test_url = reverse_lazy('ihub:member_new', args=[self.instance.pk, ])
         self.expected_template = 'ihub/member_form_popout.html'
         self.user = self.get_and_login_user(in_group="ihub_edit")
@@ -586,7 +627,7 @@ class TestOrganizationMemberUpdateView(CommonTest):
 class TestOrganizationUpdateView(CommonTest):
     def setUp(self):
         super().setUp()
-        self.instance = FactoryFloor.OrganizationFactory()
+        self.instance = FactoryFloor.IOrganizationFactory()
         self.test_url = reverse_lazy('ihub:org_edit', args=[self.instance.pk, ])
         self.expected_template = 'ihub/form.html'
         self.user = self.get_and_login_user(in_group="ihub_edit")
@@ -603,7 +644,7 @@ class TestOrganizationUpdateView(CommonTest):
 
     @tag("Organization", "org_edit", "submit")
     def test_submit(self):
-        data = FactoryFloor.OrganizationFactory.get_valid_data()
+        data = FactoryFloor.IOrganizationFactory.get_valid_data()
         self.assert_success_url(self.test_url, data=data, user=self.user)
 
 

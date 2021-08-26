@@ -29,6 +29,35 @@ class OrganizationFactory(factory.django.DjangoModelFactory):
             'name_eng': faker.word(),
             'processing_plant': 0,
             'wharf': 0,
+        }
+
+
+class IGroupFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ml_models.Grouping
+
+    name = factory.lazy_attribute(lambda o: faker.word())
+    is_indigenous = True
+
+
+class IOrganizationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ml_models.Organization
+
+    name_eng = factory.lazy_attribute(lambda o: faker.word())
+    name_ind = factory.lazy_attribute(lambda o: faker.word())
+
+    @factory.post_generation
+    def grouping(self, create, extracted, **kwargs):
+        grp = ml_models.Grouping.objects.filter(is_indigenous=True).first()
+        self.grouping.set((grp,))
+
+    @staticmethod
+    def get_valid_data():
+        return {
+            'name_eng': faker.word(),
+            'processing_plant': 0,
+            'wharf': 0,
             'grouping': ml_models.Grouping.objects.filter(is_indigenous=True).first().id,
         }
 
