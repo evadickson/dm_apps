@@ -487,6 +487,46 @@ class TestOrganizationDetailView(CommonTest):
         ]
         self.assert_presence_of_context_vars(self.test_url, context_vars, user=self.user)
 
+    @tag("Organization", "org_detail", "ihub_access")
+    def test_only_iorgs_iadmin(self):
+        # create 5 indigenous organizations
+        FactoryFloor.IOrganizationFactory.create_batch(5)
+
+        # create 5 non-indigenous organizations
+        FactoryFloor.OrganizationFactory.create_batch(5)
+
+        # login as ihub_admin
+        i_user = self.get_and_login_user(in_group='ihub_admin')
+
+        # check that only the 5 indigenous orgs are visible
+        request = RequestFactory().get(self.test_url)
+        request.user = i_user
+        view = views.OrganizationDetailView()
+        view = shared_ct.setup_view(view=view, request=request)
+
+        results = view.get_field_list()
+        self.assertEqual(31, len(results))
+
+    @tag("Organization", "org_detail", "maret_access")
+    def test_only_orgs_maret(self):
+        # create 5 indigenous organizations
+        FactoryFloor.IOrganizationFactory.create_batch(5)
+
+        # create 5 non-indigenous organizations
+        FactoryFloor.OrganizationFactory.create_batch(5)
+
+        # login as maret_admin
+        m_user = self.get_and_login_user(in_group='maret_admin')
+
+        # check all orgs are visible
+        request = RequestFactory().get(self.test_url)
+        request.user = m_user
+        view = views.OrganizationDetailView()
+        view = shared_ct.setup_view(view=view, request=request)
+
+        results = view.get_field_list()
+        self.assertEqual(24, len(results))
+
 
 class TestOrganizationListView(CommonTest):
     def setUp(self):
@@ -539,7 +579,7 @@ class TestOrganizationListView(CommonTest):
         # create 5 non-indigenous organizations
         FactoryFloor.OrganizationFactory.create_batch(5)
 
-        # login as ihub_admin
+        # login as maret_admin
         m_user = self.get_and_login_user(in_group='maret_admin')
 
         # check all orgs are visible

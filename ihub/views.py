@@ -257,42 +257,76 @@ class OrganizationListView(SiteLoginRequiredMixin, CommonFilterView):
 class OrganizationDetailView(SiteLoginRequiredMixin, CommonDetailView):
     model = ml_models.Organization
     template_name = 'ihub/organization_detail.html'
-    field_list = [
-        'name_eng',
-        'name_ind',
-        'former_name',
-        'abbrev',
-        'address',
-        'mailing_address',
-        'city',
-        'postal_code',
-        'province',
-        'phone',
-        'fax',
-        'grouping',
-        'regions',
-        'sectors',
-        'dfo_contact_instructions',
-        'relationship_rating',
-        'orgs',
-        'nation',
-        'website',
-        'council_quorum',
-        'next_election',
-        'new_coucil_effective_date',
-        'election_term',
-        'population_on_reserve',
-        'population_off_reserve',
-        'population_other_reserve',
-        'fin',
-        'processing_plant',
-        'wharf',
-        'reserves',
-        "metadata|{}".format(gettext_lazy("metadata")),
-    ]
+
     home_url_name = "ihub:index"
     parent_crumb = {"title": gettext_lazy("Organizations"), "url": reverse_lazy("ihub:org_list")}
     container_class = "container-fluid"
+
+    def get_field_list(self):
+        field_list = None
+        if in_ihub_admin_group(self.request.user):
+            field_list = [
+                'name_eng',
+                'name_ind',
+                'former_name',
+                'abbrev',
+                'address',
+                'mailing_address',
+                'city',
+                'postal_code',
+                'province',
+                'phone',
+                'fax',
+                'grouping',
+                'regions',
+                'sectors',
+                'dfo_contact_instructions',
+                'relationship_rating',
+                'orgs',
+                'nation',
+                'website',
+                'council_quorum',
+                'next_election',
+                'new_coucil_effective_date',
+                'election_term',
+                'population_on_reserve',
+                'population_off_reserve',
+                'population_other_reserve',
+                'fin',
+                'processing_plant',
+                'wharf',
+                'reserves',
+                "metadata|{}".format(gettext_lazy("metadata")),
+            ]
+        else:
+            field_list = [
+            'name_eng',
+            'name_ind',
+            'former_name',
+            'abbrev',
+            'address',
+            'mailing_address',
+            'city',
+            'postal_code',
+            'province',
+            'phone',
+            'fax',
+            'grouping',
+            'regions',
+            'sectors',
+            'dfo_contact_instructions',
+            'relationship_rating',
+            'orgs',
+            'nation',
+            'website',
+            'fin',
+            'processing_plant',
+            'wharf',
+            'reserves',
+            "metadata|{}".format(gettext_lazy("metadata")),
+            ]
+
+        return field_list
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
