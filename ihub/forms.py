@@ -32,6 +32,18 @@ class EntryCreateForm(forms.ModelForm):
             'sectors': forms.SelectMultiple(attrs=chosen_js),
         }
 
+    def clean_organizations(self):
+        organizations = self.cleaned_data['organizations']
+        if not organizations:
+            raise forms.ValidationError("You must select an organization!")
+        return organizations
+
+    def clean_sectors(self):
+        sector = self.cleaned_data['sectors']
+        if not sector:
+            raise forms.ValidationError("You must select a sector!")
+        return sector
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         print("created_by: {}".format(self.fields['created_by']))
@@ -58,6 +70,18 @@ class EntryForm(forms.ModelForm):
             'regions': forms.SelectMultiple(attrs={'class': "multi-select"}),
             'sectors': forms.SelectMultiple(attrs=chosen_js),
         }
+
+    def clean_organizations(self):
+        organizations = self.cleaned_data['organizations']
+        if not organizations:
+            raise forms.ValidationError("You must select an organization!")
+        return organizations
+
+    def clean_sectors(self):
+        sector = self.cleaned_data['sectors']
+        if not sector:
+            raise forms.ValidationError("You must select a sector!")
+        return sector
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
