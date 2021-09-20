@@ -51,13 +51,20 @@ def in_mar_admin_group(user):
 class iHubAdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
     def test_func(self):
-        return in_ihub_admin_group(self.request.user)
+        return in_ihub_admin_group(self.request.user) or in_mar_admin_group(self.request.user)
 
     def dispatch(self, request, *args, **kwargs):
         user_test_result = self.get_test_func()()
         if not user_test_result and self.request.user.is_authenticated:
             return HttpResponseRedirect('/accounts/denied/')
         return super().dispatch(request, *args, **kwargs)
+
+
+def in_mar_edit_group(user):
+    """this group includes the admin group so there is no need to add an admin to this group"""
+    if user:
+        if in_mar_admin_group(user) or user.groups.filter(name='maret_edit').count() != 0:
+            return True
 
 
 def in_ihub_edit_group(user):
@@ -70,7 +77,7 @@ def in_ihub_edit_group(user):
 class iHubEditRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
     def test_func(self):
-        return in_ihub_edit_group(self.request.user)
+        return in_ihub_edit_group(self.request.user) or in_mar_edit_group(self.request.user)
 
     def dispatch(self, request, *args, **kwargs):
         user_test_result = self.get_test_func()()

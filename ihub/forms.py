@@ -8,6 +8,8 @@ from masterlist import models as ml_models
 from shared_models import models as shared_models
 from . import models
 
+from ihub import views
+
 chosen_js = {"class": "chosen-select-contains"}
 multi_select_js = {"class": "multi-select"}
 attr_fp_date = {"class": "fp-date", "placeholder": gettext_lazy("Click to select a date..")}
@@ -32,8 +34,8 @@ class EntryCreateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from ihub.views import get_ind_organizations
-        org_choices_all = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in get_ind_organizations()]
+        print("created_by: {}".format(self.fields['created_by']))
+        org_choices_all = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in views.get_ind_organizations()]
         self.fields["organizations"].choices = org_choices_all
         sector_choices = [(obj.id, f"{obj.region} - {obj.tname}") for obj in ml_models.Sector.objects.all()]
         self.fields["sectors"].choices = sector_choices
@@ -59,8 +61,7 @@ class EntryForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from ihub.views import get_ind_organizations
-        org_choices_all = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in get_ind_organizations()]
+        org_choices_all = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in views.get_ind_organizations()]
         self.fields["organizations"].choices = org_choices_all
         sector_choices = [(obj.id, f"{obj.region} - {obj.tname}") for obj in ml_models.Sector.objects.all()]
         self.fields["sectors"].choices = sector_choices
@@ -83,7 +84,6 @@ class ReportSearchForm(forms.Form):
     field_order = ["report", "fiscal_year", "statuses", "organizations", "entry_types", "single_org"]
 
     def __init__(self, *args, **kwargs):
-        from .views import get_ind_organizations
 
         super().__init__(*args, **kwargs)
 
@@ -106,10 +106,10 @@ class ReportSearchForm(forms.Form):
         entry_region_choices = [(obj.id, str(obj)) for obj in shared_models.Region.objects.filter(entries__isnull=False).distinct()]
         org_region_choices = [(obj.id, str(obj)) for obj in shared_models.Region.objects.filter(organizations__isnull=False).distinct()]
 
-        org_choices_all = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in get_ind_organizations()]
-        org_choices_has_entry = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in get_ind_organizations() if
+        org_choices_all = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in views.get_ind_organizations()]
+        org_choices_has_entry = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in views.get_ind_organizations() if
                                  obj.entries.count() > 0]
-        org_choices_has_ci = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in get_ind_organizations() if
+        org_choices_has_ci = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in views.get_ind_organizations() if
                               hasattr(obj, "consultation_instructions")]
 
         sector_choices = [(obj.id, f"{obj.region} - {obj.tname}") for obj in ml_models.Sector.objects.all() if obj.entries.count() > 0]
@@ -221,8 +221,7 @@ class OrganizationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from ihub.views import get_ind_organizations
-        org_choices_all = [(obj.id, obj) for obj in get_ind_organizations()]
+        org_choices_all = [(obj.id, obj) for obj in views.get_ind_organizations()]
         self.fields["orgs"].choices = org_choices_all
 
 
