@@ -63,18 +63,39 @@ class RegionFactory(factory.django.DjangoModelFactory):
         }
 
 
-class BranchFactory(factory.django.DjangoModelFactory):
+class SectorFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = shared_models.Branch
+        model = shared_models.Sector
 
     region = factory.SubFactory(RegionFactory)
-    name = factory.LazyAttribute(lambda o: faker.word())
+    name = factory.LazyAttribute(lambda o: faker.catch_phrase())
+    abbrev_en = factory.LazyAttribute(lambda o: faker.word())
+    abbrev_fr = factory.LazyAttribute(lambda o: faker.word())
     head = factory.SubFactory(UserFactory)
 
     @staticmethod
     def get_valid_data():
         return {
             'region': RegionFactory().id,
+            'head': UserFactory().id,
+            'name': faker.catch_phrase(),
+            'abbrev_en': faker.word()[:6],
+            'abbrev_fr': faker.word()[:6],
+        }
+
+
+class BranchFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = shared_models.Branch
+
+    sector = factory.SubFactory(SectorFactory)
+    name = factory.LazyAttribute(lambda o: faker.word())
+    head = factory.SubFactory(UserFactory)
+
+    @staticmethod
+    def get_valid_data():
+        return {
+            'sector': SectorFactory().id,
             'head': UserFactory().id,
             'name': faker.word(),
             'abbrev': faker.word()[:6],
@@ -88,6 +109,7 @@ class DivisionFactory(factory.django.DjangoModelFactory):
     branch = factory.SubFactory(BranchFactory)
     name = factory.LazyAttribute(lambda o: faker.word())
     head = factory.SubFactory(UserFactory)
+    admin = factory.SubFactory(UserFactory)
 
     @staticmethod
     def get_valid_data():
@@ -106,6 +128,7 @@ class SectionFactory(factory.django.DjangoModelFactory):
     division = factory.SubFactory(DivisionFactory)
     head = factory.SubFactory(UserFactory)
     name = factory.LazyAttribute(lambda o: faker.word())
+    admin = factory.SubFactory(UserFactory)
 
     @staticmethod
     def get_valid_data():
@@ -157,4 +180,48 @@ class ScriptFactory(factory.django.DjangoModelFactory):
             'name': faker.catch_phrase(),
             'description_en': faker.text(),
             'script': faker.text(),
+        }
+
+
+class PublicationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = shared_models.Publication
+
+    name = factory.lazy_attribute(lambda o: faker.company())
+
+
+class CitationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = shared_models.Citation
+
+    name = factory.lazy_attribute(lambda o: faker.catch_phrase())
+    authors = factory.lazy_attribute(lambda o: faker.name())
+    publication = factory.SubFactory(PublicationFactory)
+
+
+class ProjectFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = shared_models.Project
+
+    name = factory.lazy_attribute(lambda o: faker.catch_phrase())
+    code = factory.lazy_attribute(lambda o: faker.pyint(1, 1000))
+
+    @staticmethod
+    def get_valid_data():
+        return {
+            'name': faker.word(),
+            'code': faker.word(),
+        }
+
+
+class ProvinceFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = shared_models.Province
+
+    name = factory.lazy_attribute(lambda o: faker.catch_phrase())
+
+    @staticmethod
+    def get_valid_data():
+        return {
+            'name': faker.word(),
         }

@@ -185,9 +185,9 @@ class FileFactory(factory.django.DjangoModelFactory):
         }
 
 
-class IncidentFactory(factory.django.DjangoModelFactory):
+class SpeciesFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = models.Incident
+        model = models.Species
 
     name = factory.lazy_attribute(lambda o: faker.catch_phrase())
 
@@ -195,6 +195,34 @@ class IncidentFactory(factory.django.DjangoModelFactory):
     def get_valid_data():
         return {
             'name': faker.catch_phrase(),
+        }
+
+
+class IncidentFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = models.Incident
+
+    species = factory.SubFactory(SpeciesFactory)
+    name = factory.lazy_attribute(lambda o: faker.catch_phrase())
+
+    @staticmethod
+    def get_valid_data():
+        return {
+            'species': SpeciesFactory().id,
+            'name': faker.catch_phrase(),
+        }
+
+
+class ResightFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = models.Resight
+
+    incident = factory.SubFactory(IncidentFactory)
+
+    @staticmethod
+    def get_valid_data():
+        return {
+            'incident': IncidentFactory().id,
         }
 
 

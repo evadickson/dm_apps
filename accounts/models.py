@@ -1,25 +1,21 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from shared_models import models as shared_models
 
 # Choices for language
-ENG = 1
-FRE = 2
-LANGUAGE_CHOICES = (
-    (ENG, 'English'),
-    (FRE, 'French'),
-)
-
+from shared_models.models import Language
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    position_eng = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("position (English)"))
-    position_fre = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("position (French)"))
-    phone = models.CharField(max_length=25, blank=True, null=True, verbose_name=_("phone (office)"))
-    language = models.IntegerField(choices=LANGUAGE_CHOICES, blank=True, null=True, verbose_name=_("language preference"))
+    position_eng = models.CharField(max_length=1000, blank=True, null=True, verbose_name=_("position (English)"))
+    position_fre = models.CharField(max_length=1000, blank=True, null=True, verbose_name=_("position (French)"))
+    phone = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("phone (office)"))
+    language = models.ForeignKey(Language, on_delete=models.DO_NOTHING, blank=True, null=True, verbose_name=_("language preference"))
     section = models.ForeignKey(shared_models.Section, on_delete=models.DO_NOTHING, blank=True, null=True, verbose_name=_("Section"))
     retired = models.BooleanField(default=False)
 
@@ -93,3 +89,11 @@ class Announcement(models.Model):
     def is_current(self):
         """does the current date fall in between announcement validation period?"""
         return (self.valid_from <= timezone.now()) and (self.valid_to >= timezone.now())
+
+
+
+@receiver(post_save, sender=User)
+def create_user_profile1(sender, instance, created, **kwargs):
+    if not Profile.objects.filter(user=instance).exists():
+        Profile.objects.create(user=instance)
+

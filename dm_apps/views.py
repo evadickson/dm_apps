@@ -37,7 +37,7 @@ def get_app_dict(request):
     except NoReverseMatch:
         pass
 
-    if settings.SHOW_TICKETING_APP:
+    if settings.SHOW_TICKETING_APP or request.user.is_staff:
         try:
             app_dict["tickets"] = {
                 "title": _("DM Apps Tickets"),
@@ -55,7 +55,7 @@ def get_app_dict(request):
     # if we are going to fake the travel app, we add it no matter what
     if settings.FAKE_TRAVEL_APP:
         app_dict["travel"] = {
-            "title": _("Conference and Travel Management System"),
+            "title": _("EOS Conference and Travel Management System"),
             "description": _("Management tool to facilitate regional and national travel pre-approvals."),
             "status": "production",
             "access": "permission-required",
@@ -68,7 +68,7 @@ def get_app_dict(request):
     else:
         try:
             app_dict["travel"] = {
-                "title": _("Conference and Travel Management System"),
+                "title": _("EOS Conference and Travel Management System"),
                 "description": _("Management tool to facilitate regional and national travel pre-approvals."),
                 "status": "production",
                 "access": "permission-required",
@@ -107,8 +107,8 @@ def get_app_dict(request):
 
     try:
         app_dict["herring"] = {
-            "title": _("HERmorrhage"),
-            "description": _("The herring sampling and ageing application."),
+            "title": _("HERMAN"),
+            "description": _("The Herring Program for Data Entry."),
             "status": "production",
             "access": "permission-required",
             "url": reverse('herring:index'),
@@ -132,39 +132,39 @@ def get_app_dict(request):
         pass
 
     try:
-        app_dict["camp"] = {
-            "title": _("CAMP db"),
-            "description": _("Community Aquatic Monitoring Program (CAMP) data entry and archiving tool."),
-            "status": "production",
+        app_dict["csas2"] = {
+            "title": _("Canadian Science Advisory Secretariat (v2)"),
+            "description": _("Tool for tracking meetings, requests and publications."),
+            "status": "beta",
             "access": "login-required",
-            "url": reverse('camp:index'),
-            "icon_path": 'img/icons/seine.svg',
+            "url": reverse('csas2:index'),
+            "icon_path": 'img/csas/csas_image.svg',
             "region": "regional",
         }
     except NoReverseMatch:
         pass
 
     try:
-        app_dict["scifi"] = {
-            "title": _("SciFi"),
-            "description": _("Gulf Science finance tracking and reporting tool."),
-            "status": "production",
-            "access": "permission-required",
-            "url": reverse('scifi:index'),
-            "icon_path": 'img/icons/money1.svg',
-            "region": "all",
+        app_dict["scuba"] = {
+            "title": _("SCUBA"),
+            "description": _("Lobster SCUBA survey data entry and archiving tool."),
+            "status": "prod",
+            "access": "login-required",
+            "url": reverse('scuba:index'),
+            "icon_path": 'img/icons/diving-mask.png',
+            "region": "regional",
         }
     except NoReverseMatch:
         pass
 
     try:
-        app_dict["spring_cleanup"] = {
-            "title": _("GFC Spring Cleanup!"),
-            "description": _("App to coordinate a spring cleanup in the area around the GFC. Sign up today!!."),
+        app_dict["edna"] = {
+            "title": _("eDNA Krabappel"),
+            "description": _("eDNA sample logging tool"),
             "status": "dev",
-            "access": "permission-required",
-            "url": reverse('spring_cleanup:index'),
-            "icon_path": 'img/icons/earth.svg',
+            "access": "login-required",
+            "url": reverse('edna:index'),
+            "icon_path": 'img/icons/dna.png',
             "region": "regional",
         }
     except NoReverseMatch:
@@ -301,13 +301,13 @@ def get_app_dict(request):
         pass
 
     try:
-        app_dict["csas"] = {
-            "title": _("Canadian Science Advisory Secretariat"),
-            "description": _("Tool for tracking meetings, requests and publications."),
+        app_dict["bio_diversity"] = {
+            "title": _("Biodiversity"),
+            "description": _("Tool for Biodiversity project"),
             "status": "dev",
             "access": "login-required",
-            "url": reverse('csas:index'),
-            "icon_path": 'img/csas/csas_image.svg',
+            "url": reverse('bio_diversity:index'),
+            "icon_path": 'img/bio_diversity/bio_diversity_image.svg',
             "region": "regional",
         }
     except NoReverseMatch:
@@ -330,7 +330,7 @@ def get_app_dict(request):
         app_dict["whalebrary"] = {
             "title": _("Whalebrary / Baleinothèque"),
             "description": _("Tools for Marine Mammal Teams and Necropsy Organization"),
-            "status": "dev",
+            "status": "beta",
             "access": "permission-required",
             "url": reverse('whalebrary:index'),
             "icon_path": 'img/icons/whalebrary.svg',
@@ -340,10 +340,49 @@ def get_app_dict(request):
         pass
 
     try:
+        app_dict["fisheriescape"] = {
+            "title": _("Fisheries Landscape Tool"),
+            "description": _("Tool for mapping fisheries landscapes for marine species at risk"),
+            "status": "dev",
+            "access": "login-required",
+            "url": reverse('fisheriescape:index'),
+            "icon_path": 'img/icons/fisheriescape.svg',
+            "region": "regional",
+        }
+    except NoReverseMatch:
+        pass
+
+    try:
+        app_dict["camp"] = {
+            "title": _("CAMP db"),
+            "description": _("Community Aquatic Monitoring Program (CAMP) data entry and archiving tool."),
+            "status": "production",
+            "access": "login-required",
+            "url": reverse('camp:index'),
+            "icon_path": 'img/icons/seine.svg',
+            "region": "regional",
+        }
+    except NoReverseMatch:
+        pass
+
+    try:
+        app_dict["events"] = {
+            "title": _("Events Planner"),
+            "description": _("Tool for the planning and organization of events"),
+            "status": "dev",
+            "access": "login-required",
+            "url": reverse('events:index'),
+            "icon_path": 'img/icons/calendar.png',
+            "region": "all",
+        }
+    except NoReverseMatch:
+        pass
+
+    try:
         app_dict["spot"] = {
             "title": _("Grants & Contributions"),
             "description": _("Gulf Region application for the tracking of Gs & Cs."),
-            "status": "beta",
+            "status": "dev",
             "access": "permission-required",
             "url": reverse('spot:index'),
             "icon_path": 'img/icons/agreement.svg',
@@ -351,19 +390,71 @@ def get_app_dict(request):
         }
     except NoReverseMatch:
         pass
-    #
-    # try:
-    #     app_dict["masterlist"] = {
-    #         "title": _("MasterList"),
-    #         "description": _("Regional master list and consultation instructions."),
-    #         "status": "dev",
-    #         "access": "permission-required",
-    #         "url": reverse('masterlist:index'),
-    #         "icon_path": 'img/icons/connection.svg',
-    #         "region": "regional",
-    #     }
-    # except NoReverseMatch:
-    #     pass
+
+    try:
+        app_dict["scifi"] = {
+            "title": _("SciFi"),
+            "description": _("Science finance tracking and reporting tool."),
+            "status": "production",
+            "access": "permission-required",
+            "url": reverse('scifi:index'),
+            "icon_path": 'img/icons/money1.svg',
+            "region": "all",
+        }
+    except NoReverseMatch:
+        pass
+
+    try:
+        app_dict["spring_cleanup"] = {
+            "title": _("GFC Spring Cleanup!"),
+            "description": _("App to coordinate a spring cleanup in the area around the GFC. Sign up today!!."),
+            "status": "dev",
+            "access": "permission-required",
+            "url": reverse('spring_cleanup:index'),
+            "icon_path": 'img/icons/earth.svg',
+            "region": "regional",
+        }
+    except NoReverseMatch:
+        pass
+
+    try:
+        app_dict["csas"] = {
+            "title": _("Canadian Science Advisory Secretariat"),
+            "description": _("Tool for tracking meetings, requests and publications."),
+            "status": "dev",
+            "access": "login-required",
+            "url": reverse('csas:index'),
+            "icon_path": 'img/csas/csas_image.svg',
+            "region": "regional",
+        }
+    except NoReverseMatch:
+        pass
+
+    try:
+        app_dict["maret"] = {
+            "title": _("Maritimes Engagement Tracker (MarET)"),
+            "description": _("Tool for tracking Policy and Economics Engagement"),
+            "status": "dev",
+            "access": "login-required",
+            "url": reverse('maret:index'),
+            "icon_path": 'img/icons/plug.svg',
+            "region": "regional",
+        }
+    except NoReverseMatch:
+        pass
+
+    try:
+        app_dict["res"] = {
+            "title": _("SE-RES Career Progression Dossier App"),
+            "description": _("Research Scientist Dossier Tracking Application"),
+            "status": "dev",
+            "access": "login-required",
+            "url": reverse('res:index'),
+            "icon_path": 'img/icons/success.png',
+            "region": "regional",
+        }
+    except NoReverseMatch:
+        pass
 
     try:
         app_dict["projects"] = {
@@ -377,6 +468,7 @@ def get_app_dict(request):
         }
     except NoReverseMatch:
         pass
+
     return OrderedDict(app_dict)
 
 
@@ -390,8 +482,8 @@ class IndexView(TemplateView):
         #               mark_safe(_("<b>On Friday January 10, 2020 at 12pm AST, the site will be down for a few hours for scheduled maintenance. Sorry for any inconvenience.</b>")))
         return super().dispatch(request, *args, **kwargs)
 
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
         app_odict = get_app_dict(self.request)
         app_dict_shared = OrderedDict()
         app_dict_regional = OrderedDict()
@@ -406,6 +498,6 @@ class IndexView(TemplateView):
         context["app_dict_regional"] = app_dict_regional
         context["app_dict"] = app_odict
         context["announcements"] = [a for a in Announcement.objects.all() if a.is_current]
-        if settings.DEVOPS_BUILD_NUMBER and settings.DEVOPS_BUILD_NUMBER != "":
-            context["build_number"] = settings.DEVOPS_BUILD_NUMBER
+        if settings.GIT_VERSION and settings.GIT_VERSION != "":
+            context["git_version_number"] = settings.GIT_VERSION
         return context

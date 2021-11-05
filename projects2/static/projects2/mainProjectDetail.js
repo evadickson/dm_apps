@@ -1,12 +1,19 @@
+Vue.component('v-select', VueSelect.VueSelect);
 var app = new Vue({
   el: '#app',
   delimiters: ["${", "}"],
   data: {
+    showSidebar: false,
     showOverview: true,
+    collapseOverview: false,
+    collapseFinancials: true,
+    collapseSubmit: true,
     currentUser: null,
     canModify: false,
     showSubmit: false,
     isACRDP: false,
+    isCSRF: false,
+    isSARA: false,
     project_loading: false,
     project: {},
 
@@ -30,6 +37,8 @@ var app = new Vue({
     omCostToEdit: {},
     showNewOMCostModal: false,
     showOldOMCostModal: false,
+    omCostLabels: [],
+    omCategoryChoices: [],
 
     // capital costs
     capital_cost_loading: false,
@@ -38,34 +47,24 @@ var app = new Vue({
     showNewCapitalCostModal: false,
     showOldCapitalCostModal: false,
 
-    // gc costs
-    gc_cost_loading: false,
-    gc_costs: [],
-    gcCostToEdit: {},
-    showNewGCCostModal: false,
-    showOldGCCostModal: false,
-
     // activities
     activity_loading: false,
     activities: [],
     activityToEdit: {},
     showNewActivityModal: false,
     showOldActivityModal: false,
+    activityLabels: [],
+    activityTypeChoices: [],
+    likelihoodChoices: [],
+    impactChoices: [],
+    riskRatingChoices: [],
 
-    // collaborators
-    collaborator_loading: false,
-    collaborators: [],
-    collaboratorToEdit: {},
-    showNewCollaboratorModal: false,
-    showOldCollaboratorModal: false,
-
-    // agreements
-    agreement_loading: false,
-    agreements: [],
-    agreementToEdit: {},
-    showNewAgreementModal: false,
-    showOldAgreementModal: false,
-
+    // collaborations
+    collaboration_loading: false,
+    collaborations: [],
+    collaborationToEdit: {},
+    showNewCollaborationModal: false,
+    showOldCollaborationModal: false,
 
     // status reports
     status_report_loading: false,
@@ -84,17 +83,20 @@ var app = new Vue({
   },
   methods: {
     displayOverview() {
-      this.showOverview = true
-      this.showSubmit = false
+      this.collapseOverview = false;
+      // this.projectYear = {};
     },
     displaySubmit() {
       this.showSubmit = true
       this.showOverview = false
     },
     displayProjectYear(yearId) {
-      this.showSubmit = false
-      this.showOverview = false
-      this.getProjectYear(yearId)
+      // this.showOverview = true;
+      // this.getProjectYear(yearId)
+      window.location.hash = "#project-year"
+      window.location.search = `?project_year=${yearId}`
+      // update the query params
+
     },
     getProjectYear(yearId) {
       this.py_loading = true;
@@ -107,10 +109,8 @@ var app = new Vue({
             this.getStaff(yearId)
             this.getOMCosts(yearId)
             this.getCapitalCosts(yearId)
-            this.getGCCosts(yearId)
             this.getActivities(yearId)
-            this.getCollaborators(yearId)
-            this.getAgreements(yearId)
+            this.getCollaborations(yearId)
             this.getStatusReports(yearId)
             this.getFiles(yearId)
             this.getFinancials(yearId)
@@ -123,8 +123,23 @@ var app = new Vue({
           .then(response => {
             this.project_loading = false;
             this.project = response;
-            if(response.id && response.default_funding_source.toLowerCase().search("acrdp") > -1) {
+            if (response.id && response.default_funding_source && response.default_funding_source.toLowerCase().search("acrdp") > -1) {
               this.isACRDP = true;
+            } else if (response.id && response.default_funding_source && response.default_funding_source.toLowerCase().search("csrf") > -1) {
+              this.isCSRF = true;
+            } else if (response.id && response.default_funding_source && response.default_funding_source.toLowerCase().search("sara") > -1) {
+              this.isSARA = true;
+            }
+
+            // check to see if we are being asked to open the page to a specific year
+            // from https://stackoverflow.com/questions/35914069/how-can-i-get-query-parameters-from-a-url-in-vue-js
+            let uri = window.location.search.substring(1);
+            let params = new URLSearchParams(uri);
+            let projectYearParam = params.get("project_year");
+            if (projectYearParam) {
+              this.getProjectYear(projectYearParam)
+            } else if (!this.projectYear.id && this.project.years.length) {
+              this.getProjectYear(this.project.years[0].id)
             }
           })
     },
@@ -286,35 +301,6 @@ var app = new Vue({
       }
     },
 
-    // GC
-    getGCCosts(yearId) {
-      this.gc_cost_loading = true;
-      let endpoint = `/api/project-planning/project-years/${yearId}/gc-costs/`;
-      apiService(endpoint)
-          .then(response => {
-            this.gc_cost_loading = false;
-            this.gc_costs = response;
-          })
-    },
-    deleteGCCost(gcCost) {
-      userInput = confirm(deleteMsg + gcCost.category_display)
-      if (userInput) {
-        let endpoint = `/api/project-planning/gc-costs/${gcCost.id}/`;
-        apiService(endpoint, "DELETE")
-            .then(response => {
-              if (!response.detail) this.$delete(this.gc_costs, this.gc_costs.indexOf(gcCost));
-            })
-      }
-    },
-
-    openGCCostModal(gcCost) {
-      if (!gcCost) {
-        this.showNewGCCostModal = true;
-      } else {
-        this.gcCostToEdit = gcCost;
-        this.showOldGCCostModal = true;
-      }
-    },
 
     // Activities
     getActivities(yearId) {
@@ -336,6 +322,13 @@ var app = new Vue({
             })
       }
     },
+    cloneActivity(activity) {
+      let endpoint = `/api/project-planning/activities/${activity.id}/?clone=true`;
+      apiService(endpoint, "POST")
+          .then(response => {
+            if (!response.detail) this.getActivities(activity.project_year_id);
+          })
+    },
 
     openActivityModal(activity) {
       if (!activity) {
@@ -347,65 +340,36 @@ var app = new Vue({
     },
 
 
-    // Collaborator
-    getCollaborators(yearId) {
-      this.collaborator_loading = true;
-      let endpoint = `/api/project-planning/project-years/${yearId}/collaborators/`;
+    // Collaboration
+    getCollaborations(yearId) {
+      this.collaboration_loading = true;
+      let endpoint = `/api/project-planning/project-years/${yearId}/collaborations/`;
       apiService(endpoint)
           .then(response => {
-            this.collaborator_loading = false;
-            this.collaborators = response;
+            this.collaboration_loading = false;
+            this.collaborations = response;
           })
     },
-    deleteCollaborator(collaborator) {
-      userInput = confirm(deleteMsg + collaborator.name)
+    deleteCollaboration(collaboration) {
+      userInput = confirm(deleteMsg + collaboration.name)
       if (userInput) {
-        let endpoint = `/api/project-planning/collaborators/${collaborator.id}/`;
+        let endpoint = `/api/project-planning/collaborations/${collaboration.id}/`;
         apiService(endpoint, "DELETE")
             .then(response => {
-              if (!response.detail) this.$delete(this.collaborators, this.collaborators.indexOf(collaborator));
+              if (!response.detail) this.$delete(this.collaborations, this.collaborations.indexOf(collaboration));
             })
       }
     },
 
-    openCollaboratorModal(collaborator) {
-      if (!collaborator) {
-        this.showNewCollaboratorModal = true;
+    openCollaborationModal(collaboration) {
+      if (!collaboration) {
+        this.showNewCollaborationModal = true;
       } else {
-        this.collaboratorToEdit = collaborator;
-        this.showOldCollaboratorModal = true;
+        this.collaborationToEdit = collaboration;
+        this.showOldCollaborationModal = true;
       }
     },
 
-    // Agreement
-    getAgreements(yearId) {
-      this.agreement_loading = true;
-      let endpoint = `/api/project-planning/project-years/${yearId}/agreements/`;
-      apiService(endpoint)
-          .then(response => {
-            this.agreement_loading = false;
-            this.agreements = response;
-          })
-    },
-    deleteAgreement(agreement) {
-      userInput = confirm(deleteMsg + agreement.name)
-      if (userInput) {
-        let endpoint = `/api/project-planning/agreements/${agreement.id}/`;
-        apiService(endpoint, "DELETE")
-            .then(response => {
-              if (!response.detail) this.$delete(this.agreements, this.agreements.indexOf(agreement));
-            })
-      }
-    },
-
-    openAgreementModal(agreement) {
-      if (!agreement) {
-        this.showNewAgreementModal = true;
-      } else {
-        this.agreementToEdit = agreement;
-        this.showOldAgreementModal = true;
-      }
-    },
 
     // Status Report
     getStatusReports(yearId) {
@@ -477,17 +441,11 @@ var app = new Vue({
       this.showNewCapitalCostModal = false;
       this.showOldCapitalCostModal = false;
 
-      this.showNewGCCostModal = false;
-      this.showOldGCCostModal = false;
-
       this.showNewActivityModal = false;
       this.showOldActivityModal = false;
 
-      this.showNewCollaboratorModal = false;
-      this.showOldCollaboratorModal = false;
-
-      this.showNewAgreementModal = false;
-      this.showOldAgreementModal = false;
+      this.showNewCollaborationModal = false;
+      this.showOldCollaborationModal = false;
 
       this.showNewStatusReportModal = false;
       this.showOldStatusReportModal = false;
@@ -497,16 +455,15 @@ var app = new Vue({
 
       if (projectYear) {
         this.$nextTick(() => {
-          this.getStaff(projectYear.id)
-          this.getOMCosts(projectYear.id)
-          this.getCapitalCosts(projectYear.id)
-          this.getGCCosts(projectYear.id)
-          this.getActivities(projectYear.id)
-          this.getAgreements(projectYear.id)
-          this.getStatusReports(projectYear.id)
-          this.getCollaborators(projectYear.id)
-          this.getFiles(projectYear.id)
-          this.getFinancials(projectYear.id)
+          this.getProjectYear(projectYear.id)
+          // this.getStaff(projectYear.id)
+          // this.getOMCosts(projectYear.id)
+          // this.getCapitalCosts(projectYear.id)
+          // this.getActivities(projectYear.id)
+          // this.getStatusReports(projectYear.id)
+          // this.getCollaborations(projectYear.id)
+          // this.getFiles(projectYear.id)
+          // this.getFinancials(projectYear.id)
           this.getProjectFinancials(projectYear.project.id)
           this.getCurrentUser(projectYear.project.id)
 
@@ -526,7 +483,8 @@ var app = new Vue({
       window.location.href = `/project-planning/project-years/${projectYearId}/clone/`
     },
     goStatusReportDetail(statusReportId) {
-      window.location.href = `/project-planning/status-reports/${statusReportId}/view/`
+      url = `/project-planning/status-reports/${statusReportId}/view/`;
+      win = window.open(url, '_blank');
     },
     isABase(name) {
       if (name && name.length) {
@@ -543,47 +501,41 @@ var app = new Vue({
         return name.toLowerCase().search("c-base") > -1
       }
     },
-
-  },
-
-  filters: {
-    floatformat: function (value, precision = 2) {
-      if (value == null) return '';
-      value = Number(value).toFixed(precision).toLocaleString("en");
-      return value
+    getActivityMetadata() {
+      let endpoint = `/api/project-planning/meta/models/activity/`;
+      apiService(endpoint).then(data => {
+        this.activityLabels = data.labels;
+        this.activityTypeChoices = data.type_choices;
+        this.likelihoodChoices = data.likelihood_choices;
+        this.impactChoices = data.impact_choices;
+        this.riskRatingChoices = data.risk_rating_choices;
+      });
     },
-    currencyFormat: function (value, precision = 2) {
-      if (value == null) return '';
-      value = accounting.formatNumber(value, precision);
-      return value
+    getOMCostMetadata() {
+      let endpoint = `/api/project-planning/meta/models/om-cost/`;
+      apiService(endpoint).then(data => {
+        this.omCostLabels = data.labels;
+        this.omCategoryChoices = data.om_category_choices;
+      });
     },
-    zero2NullMark: function (value) {
-      if (!value || value === "0.00" || value == 0) return '---';
-      return value
-    },
-    nz: function (value, arg = "---") {
-      if (value == null || value === "None") return arg;
-      return value
-    },
-    yesNo: function (value) {
-      if (value == null || value == false || value == 0) return 'No';
-      return "Yes"
-    },
-    percentage: function (value, decimals) {
-      // https://gist.github.com/belsrc/672b75d1f89a9a5c192c
-      if (!value) {
-        value = 0;
+    markActivity(activity, action) {
+      if (action === "complete" || action === "incomplete") {
+        if (action === "complete") msg = markActivityAsComplete;
+        else msg = markActivityAsIncomplete;
+        let userInput = prompt(msg);
+        if (userInput !== null) {
+          this.project_loading = true;
+          let endpoint = `/api/project-planning/activities/${activity.id}/?action=${action}`;
+          apiService(endpoint, "POST", userInput)
+              .then(response => {
+                this.project_loading = false;
+                this.getProjectYear(activity.project_year_id)
+              })
+        }
       }
 
-      if (!decimals) {
-        decimals = 0;
-      }
+    },
 
-      value = value * 100;
-      value = Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
-      value = value + '%';
-      return value;
-    }
   },
   computed: {
     financial_totals() {
@@ -623,6 +575,8 @@ var app = new Vue({
 
   },
   created() {
+    this.getActivityMetadata();
+    this.getOMCostMetadata();
     this.getProjectFinancials(projectId)
     this.getCurrentUser(projectId)
     this.getProject(projectId)

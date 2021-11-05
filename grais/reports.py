@@ -1,18 +1,20 @@
+import os
 import statistics
+
 import unicodecsv as csv
 import xlsxwriter as xlsxwriter
+from django.conf import settings
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import floatformat
 from django.utils import timezone
-from django.conf import settings
 
 from lib.functions.custom_functions import nz, listrify
 from lib.functions.verbose_field_name import verbose_field_name
 from . import models
-import os
 
 
-def generate_species_sample_spreadsheet(species_list=None):
+def generate_species_sample_spreadsheet(year, species_list=None):
     # figure out the filename
     target_dir = os.path.join(settings.BASE_DIR, 'media', 'grais', 'temp')
     target_file = "temp_data_export_{}.xlsx".format(timezone.now().strftime("%Y-%m-%d"))
@@ -55,8 +57,8 @@ def generate_species_sample_spreadsheet(species_list=None):
         "Observation day",
         verbose_field_name(my_sample, 'station'),
         verbose_field_name(my_sample.station, 'province'),
-        verbose_field_name(my_sample.station, 'latitude_n'),
-        verbose_field_name(my_sample.station, 'longitude_w'),
+        verbose_field_name(my_sample.station, 'latitude'),
+        verbose_field_name(my_sample.station, 'longitude'),
         "observed at station?",
         "observed on line?",
         "observed on collector surface?",
@@ -77,18 +79,17 @@ def generate_species_sample_spreadsheet(species_list=None):
         my_ws.write_row(0, 0, header, header_format)
 
         # get a list of samples for each requested species FROM ALL SOURCES
-        sample_list = [models.Sample.objects.get(pk=s["surface__line__sample"]) for s in
-                       models.SurfaceSpecies.objects.filter(species=species).values(
-                           "surface__line__sample").distinct()]
+        samples = models.Sample.objects.all()
+        if year and year != "None":
+            samples = samples.filter(season=int(year))
+        sample_list = [samples.get(pk=s["surface__line__sample"]) for s in
+                       models.SurfaceSpecies.objects.filter(species=species, surface__line__sample__in=samples).values("surface__line__sample").distinct()]
         sample_list.extend(
             [models.Sample.objects.get(pk=s["sample"]) for s in
-             models.SampleSpecies.objects.filter(species=species).values(
-                 "sample").distinct()]
+             models.SampleSpecies.objects.filter(species=species, sample__in=samples).values("sample").distinct()]
         )
         sample_list.extend(
-            [models.Sample.objects.get(pk=s["line__sample"]) for s in
-             models.LineSpecies.objects.filter(species=species).values(
-                 "line__sample").distinct()]
+            [models.Sample.objects.get(pk=s["line__sample"]) for s in models.LineSpecies.objects.filter(species=species, line__sample__in=samples).values("line__sample").distinct()]
         )
         # distill the list
         sample_set = set(sample_list)
@@ -161,8 +162,8 @@ def generate_species_sample_spreadsheet(species_list=None):
                 obs_day,
                 sample.station.station_name,
                 sample.station.province.tabbrev,
-                sample.station.latitude_n,
-                sample.station.longitude_w,
+                sample.station.latitude,
+                sample.station.longitude,
                 at_station,
                 on_line,
                 on_surface,
@@ -206,6 +207,104 @@ def generate_species_sample_spreadsheet(species_list=None):
                                      'value': '"no"',
                                      'format': red_format,
                                  })
+
+    workbook.close()
+    return target_url
+
+
+def generate_biofouling_pa_spreadsheet(year=None):
+    # figure out the filename
+    target_dir = os.path.join(settings.BASE_DIR, 'media', 'grais', 'temp')
+    target_file = "temp_data_export_{}.xlsx".format(timezone.now().strftime("%Y-%m-%d"))
+    target_file_path = os.path.join(target_dir, target_file)
+    target_url = os.path.join(settings.MEDIA_ROOT, 'grais', 'temp', target_file)
+
+    # create workbook and worksheets
+    workbook = xlsxwriter.Workbook(target_file_path)
+
+    # create formatting
+    header_format = workbook.add_format(
+        {'bold': True, "align": 'normal', "text_wrap": True})
+    normal_format = workbook.add_format({"align": 'left', "text_wrap": True})
+    # Add a format. Light red fill with dark red text.
+
+    # define the header
+    header = [
+        "Year",
+        "Station",
+        "Province",
+        "Latitude",
+        "Longitude",
+        "B schlosseri",
+        "B violaceus",
+        "C intestinalis",
+        "S clava",
+        "C mutica",
+        "M membranacea",
+        "C maenas",
+        "C fragile",
+    ]
+
+    stations = models.Station.objects.all()
+    if year:
+        years = [year]
+    else:
+        years = [item["season"] for item in models.Sample.objects.order_by("season").values("season").distinct()]
+
+    i = 1
+    my_ws = workbook.add_worksheet(name="report")
+
+    col_max = [len(str(d)) if len(str(d)) <= 100 else 100 for d in header]
+    my_ws.write_row(0, 0, header, header_format)
+
+    ais_list = [get_object_or_404(models.Species, pk=id) for id in [24, 48, 23, 25, 47, 59, 26, 55]]
+
+    for year in years:
+        for station in stations:
+            sample_qs = models.Sample.objects.filter(season=year, station=station)
+
+            for sample in sample_qs:
+                data_row = [
+                    year,
+                    station.station_name,
+                    station.province.abbrev_eng,
+                    station.latitude,
+                    station.longitude,
+                ]
+
+                for ais in ais_list:
+                    # does a sample even exist?
+                    # start out optimistic
+                    has_been_observed = 0
+
+                    # we will have to search in three places: sample level, line level, collector level
+                    if models.SampleSpecies.objects.filter(sample=sample, species=ais).exists():
+                        has_been_observed = 1
+                    elif models.LineSpecies.objects.filter(line__sample=sample, species=ais).exists():
+                        has_been_observed = 1
+                    elif models.SurfaceSpecies.objects.filter(surface__line__sample=sample, species=ais).exists():
+                        has_been_observed = 1
+
+                    data_row.append(has_been_observed)
+
+                # adjust the width of the columns based on the max string length in each col
+                ## replace col_max[j] if str length j is bigger than stored value
+
+                j = 0
+                for d in data_row:
+                    # if new value > stored value... replace stored value
+                    if len(str(d)) > col_max[j]:
+                        if len(str(d)) < 100:
+                            col_max[j] = len(str(d))
+                        else:
+                            col_max[j] = 100
+                    j += 1
+
+                my_ws.write_row(i, 0, data_row, normal_format)
+                i += 1
+
+    for j in range(0, len(col_max)):
+        my_ws.set_column(j, j, width=col_max[j] * 1.3)
 
     workbook.close()
     return target_url
@@ -427,7 +526,6 @@ def generate_open_data_ver_1_report(year=None):
 
     samples = models.Sample.objects.all()
     # if there is a year provided, filter by only this year
-    print(year)
     if year and year != "None":
         samples = samples.filter(season=year)
 
@@ -436,6 +534,7 @@ def generate_open_data_ver_1_report(year=None):
         line__sample_id__in=[obj["id"] for obj in samples.order_by("id").values("id").distinct()],
         line__is_lost=False,
         is_lost=False,
+        is_damaged=False,
     ).order_by("line__sample__date_deployed")
 
     for surface in surfaces:
@@ -461,7 +560,7 @@ def generate_open_data_ver_1_report(year=None):
         # summarize all of the samplers
         samplers = listrify(["{} ({})".format(obj, obj.organization) for obj in surface.line.sample.samplers.all()])
         # summarize all of the "other" species
-        other_spp = listrify([str(sp) for sp in surface.species.all() if sp.id not in species_id_list])
+        other_spp = listrify([sp.name_plaintext for sp in surface.species.all() if sp.id not in species_id_list])
 
         data_row = [
             surface.line.sample.season,
@@ -471,8 +570,8 @@ def generate_open_data_ver_1_report(year=None):
             surface.line.sample.date_retrieved.strftime("%Y-%m-%d") if surface.line.sample.date_retrieved else None,
             surface.line.sample.weeks_deployed,
             surface.line.sample.station.site_desc,
-            surface.line.latitude_n,
-            surface.line.longitude_w,
+            surface.line.latitude,
+            surface.line.longitude,
             surface.line.collector,
             surface.get_surface_type_display(),
             surface.label,
@@ -525,6 +624,9 @@ def generate_open_data_ver_1_wms_report(year, lang):
     response.write(u'\ufeff'.encode('utf8'))  # BOM (optional...Excel needs it to open UTF-8 file properly)
     writer = csv.writer(response)
 
+    yes = "yes" if lang == 1 else "oui"
+    no = "no" if lang == 1 else "non"
+
     header_row = [
         'seasons' if lang == 1 else "saisons",
         'station_code' if lang == 1 else "code_de_station",
@@ -559,10 +661,11 @@ def generate_open_data_ver_1_wms_report(year, lang):
         surface__line__sample_id__in=[obj["id"] for obj in samples.order_by("id").values("id").distinct()],
         surface__line__is_lost=False,
         surface__is_lost=False,
+        surface__is_damaged=False,
     )
 
     for station in stations:
-        other_spp = listrify([str(models.Species.objects.get(pk=obj["species"])) for obj in
+        other_spp = listrify([models.Species.objects.get(pk=obj["species"]).name_plaintext for obj in
                               surfacespecies.filter(surface__line__sample__station=station).order_by("species").values("species").distinct()
                               if obj["species"] not in species_id_list])
         seasons = listrify(
@@ -575,8 +678,8 @@ def generate_open_data_ver_1_wms_report(year, lang):
             station.station_name,
             station.province.abbrev_eng if lang == 1 else station.province.abbrev_fre,
             station.site_desc,
-            station.latitude_n,
-            station.longitude_w,
+            station.latitude,
+            station.longitude,
             other_spp,
         ]
 
@@ -586,9 +689,9 @@ def generate_open_data_ver_1_wms_report(year, lang):
                 species=species,
             ).count()
             if spp_count > 0:
-                data_row.append(True)
+                data_row.append(yes)
             else:
-                data_row.append(False)
+                data_row.append(no)
 
         writer.writerow(data_row)
 
@@ -775,8 +878,8 @@ def generate_gc_sites_report():
             obj.name,
             obj.code,
             obj.description,
-            obj.latitude_n,
-            obj.longitude_w,
+            obj.latitude,
+            obj.longitude,
         ]
 
         # adjust the width of the columns based on the max string length in each col

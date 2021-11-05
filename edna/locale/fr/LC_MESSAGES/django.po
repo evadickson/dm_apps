@@ -1,0 +1,1578 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-10-06 12:51-0300\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: fr\n"
+"X-Generator: Poedit 2.4.1\n"
+
+#: .\edna\api\views.py:172 .\edna\api\views.py:219
+msgid "You need to specify a batch"
+msgstr ""
+
+#: .\edna\filters.py:12
+msgid "Search term"
+msgstr "Terme à rechercher"
+
+#: .\edna\filters.py:30 .\edna\filters.py:49 .\edna\filters.py:68
+#: .\edna\templates\edna\filtration_batch_detail.html:62
+#: .\edna\templates\edna\sample_data_entry.html:57
+#, fuzzy
+#| msgid "Sample #"
+msgid "Sample ID"
+msgstr "No. d'échantillon "
+
+#: .\edna\filters.py:47 .\edna\templates\edna\filtration_batch_detail.html:61
+#, fuzzy
+#| msgid "Sites"
+msgid "Filter ID"
+msgstr "Les emplacements"
+
+#: .\edna\filters.py:50
+msgid "Tube ID"
+msgstr ""
+
+#: .\edna\filters.py:67
+msgid "Extract ID"
+msgstr ""
+
+#: .\edna\filters.py:80 .\edna\templates\edna\pcr_batch_detail.html:50
+msgid "qPCR ID"
+msgstr ""
+
+#: .\edna\forms.py:241
+msgid "Year"
+msgstr "Année"
+
+#: .\edna\models.py:39
+msgid "common name (EN)"
+msgstr ""
+
+#: .\edna\models.py:40
+msgid "common name (FR)"
+msgstr ""
+
+#: .\edna\models.py:41
+msgid "scientific name"
+msgstr ""
+
+#: .\edna\models.py:48
+msgid "common_name_en"
+msgstr ""
+
+#: .\edna\models.py:60 .\edna\templates\edna\base\_nav_left_auth.html:20
+#: .\edna\views.py:140 .\edna\views.py:150 .\edna\views.py:158
+#, fuzzy
+#| msgid "Sites"
+msgid "Species"
+msgstr "Les emplacements"
+
+#: .\edna\models.py:75
+msgid "target name / alias"
+msgstr ""
+
+#: .\edna\models.py:76
+msgid ""
+"This is the name that will be used to reference this assay on import "
+"spreadsheets."
+msgstr ""
+
+#: .\edna\models.py:77
+msgid "LOD value"
+msgstr ""
+
+#: .\edna\models.py:78
+msgid "LOQ value"
+msgstr ""
+
+#: .\edna\models.py:79
+msgid "formula A coefficient"
+msgstr ""
+
+#: .\edna\models.py:80
+msgid "formula B coefficient"
+msgstr ""
+
+#: .\edna\models.py:81
+msgid "is this assay being used as an IPC?"
+msgstr ""
+
+#: .\edna\models.py:82 .\edna\utils.py:92
+msgid "species"
+msgstr ""
+
+#: .\edna\models.py:96
+#, fuzzy
+#| msgid "region"
+msgid "DFO region"
+msgstr "région"
+
+#: .\edna\models.py:97
+msgid "program description"
+msgstr ""
+
+#: .\edna\models.py:98
+#, fuzzy
+#| msgid "No observations"
+msgid "area of operation"
+msgstr "Aucune observations"
+
+#: .\edna\models.py:100
+msgid "contact DMApps user(s)"
+msgstr ""
+
+#: .\edna\models.py:101
+#, fuzzy
+#| msgid "last name"
+msgid "contact name"
+msgstr "nom de famille"
+
+#: .\edna\models.py:102
+msgid "contact email"
+msgstr ""
+
+#: .\edna\models.py:104
+msgid "tags"
+msgstr ""
+
+#: .\edna\models.py:107
+#, fuzzy
+#| msgid "start latitude"
+msgid "start date"
+msgstr "latitude de depart"
+
+#: .\edna\models.py:108
+#, fuzzy
+#| msgid "end latitude"
+msgid "end date"
+msgstr "latitude de fin"
+
+#: .\edna\models.py:180
+#, fuzzy
+#| msgid "section"
+msgid "collection"
+msgstr "section"
+
+#: .\edna\models.py:181
+#, fuzzy
+#| msgid "sample"
+msgid "sample type"
+msgstr "échantillon"
+
+#: .\edna\models.py:182
+msgid "bottle ID"
+msgstr ""
+
+#: .\edna\models.py:183
+#, fuzzy
+#| msgid "section"
+msgid "location"
+msgstr "section"
+
+#: .\edna\models.py:184
+msgid "site"
+msgstr "emplacement"
+
+#: .\edna\models.py:185
+msgid "station"
+msgstr ""
+
+#: .\edna\models.py:186
+#, fuzzy
+#| msgid "section"
+msgid "collection date/time"
+msgstr "section"
+
+#: .\edna\models.py:187
+#, fuzzy
+#| msgid "section"
+msgid "collector name"
+msgstr "section"
+
+#: .\edna\models.py:188
+#, fuzzy
+#| msgid "end latitude"
+msgid "latitude"
+msgstr "latitude de fin"
+
+#: .\edna\models.py:189
+#, fuzzy
+#| msgid "end longitude"
+msgid "longitude"
+msgstr "longitude de fin"
+
+#: .\edna\models.py:190 .\edna\models.py:265 .\edna\models.py:298
+#: .\edna\models.py:363 .\edna\models.py:474
+#, fuzzy
+#| msgid "comment"
+msgid "comments"
+msgstr "commentaire"
+
+#: .\edna\models.py:263
+#, fuzzy
+#| msgid "start latitude"
+msgid "date/time"
+msgstr "latitude de depart"
+
+#: .\edna\models.py:264
+msgid "operator(s)"
+msgstr ""
+
+#: .\edna\models.py:274 .\edna\views.py:618 .\edna\views.py:630
+#: .\edna\views.py:638 .\edna\views.py:662
+msgid "Filtration Batches"
+msgstr ""
+
+#: .\edna\models.py:277
+msgid "Filtration Batch"
+msgstr ""
+
+#: .\edna\models.py:289
+msgid "filtration batch"
+msgstr ""
+
+#: .\edna\models.py:290
+#, fuzzy
+#| msgid "sample"
+msgid "sample ID"
+msgstr "échantillon"
+
+#: .\edna\models.py:291
+msgid "tube ID"
+msgstr ""
+
+#: .\edna\models.py:292
+msgid "filtration type"
+msgstr ""
+
+#: .\edna\models.py:293
+#, fuzzy
+#| msgid "start latitude"
+msgid "filtration date/time"
+msgstr "latitude de depart"
+
+#: .\edna\models.py:294
+msgid "filtration duration (min)"
+msgstr ""
+
+#: .\edna\models.py:295
+msgid "volume (ml)"
+msgstr ""
+
+#: .\edna\models.py:296
+msgid "filter storage location"
+msgstr ""
+
+#: .\edna\models.py:297
+msgid "filtration IPC"
+msgstr ""
+
+#: .\edna\models.py:340 .\edna\views.py:680
+msgid "DNA Extraction Batches"
+msgstr ""
+
+#: .\edna\models.py:343
+msgid "DNA Extraction Batch"
+msgstr ""
+
+#: .\edna\models.py:355
+msgid "extraction batch"
+msgstr ""
+
+#: .\edna\models.py:356
+#, fuzzy
+#| msgid "Sites"
+msgid "filter ID"
+msgstr "Les emplacements"
+
+#: .\edna\models.py:357
+msgid "extraction number"
+msgstr ""
+
+#: .\edna\models.py:358
+#, fuzzy
+#| msgid "start latitude"
+msgid "extraction date/time"
+msgstr "latitude de depart"
+
+#: .\edna\models.py:359
+msgid "extraction protocol"
+msgstr ""
+
+#: .\edna\models.py:360
+msgid "DNA storage location"
+msgstr ""
+
+#: .\edna\models.py:361
+msgid "extraction plate ID"
+msgstr ""
+
+#: .\edna\models.py:362
+msgid "extraction plate well"
+msgstr ""
+
+#: .\edna\models.py:402
+msgid "OK"
+msgstr ""
+
+#: .\edna\models.py:403
+msgid "Bad"
+msgstr ""
+
+#: .\edna\models.py:405
+#, fuzzy
+#| msgid "end latitude"
+msgid " qPCR plate ID"
+msgstr "latitude de fin"
+
+#: .\edna\models.py:406
+msgid " qPCR machine number"
+msgstr ""
+
+#: .\edna\models.py:407
+msgid " qPCR run program"
+msgstr ""
+
+#: .\edna\models.py:408
+msgid "control status"
+msgstr ""
+
+#: .\edna\models.py:411 .\edna\views.py:784 .\edna\views.py:796
+#: .\edna\views.py:804 .\edna\views.py:820 .\edna\views.py:1013
+msgid "PCR Batches"
+msgstr ""
+
+#: .\edna\models.py:414
+#, fuzzy
+#| msgid "Add a New Sample"
+msgid "PCR Batch"
+msgstr "Ajouter un échantillon"
+
+#: .\edna\models.py:426
+#, fuzzy
+#| msgid "Add a New Sample"
+msgid " qPCR batch"
+msgstr "Ajouter un échantillon"
+
+#: .\edna\models.py:427
+msgid "extraction ID"
+msgstr ""
+
+#: .\edna\models.py:428
+msgid " qPCR plate well"
+msgstr ""
+
+#: .\edna\models.py:429
+msgid "master mix"
+msgstr ""
+
+#: .\edna\models.py:430
+#, fuzzy
+#| msgid "comment"
+msgid " qPCR comments"
+msgstr "commentaire"
+
+#: .\edna\models.py:462
+msgid "in progress"
+msgstr ""
+
+#: .\edna\models.py:463
+#, fuzzy
+#| msgid "site"
+msgid "positive"
+msgstr "emplacement"
+
+#: .\edna\models.py:464
+msgid "negative"
+msgstr ""
+
+#: .\edna\models.py:465
+msgid "no assay :("
+msgstr ""
+
+#: .\edna\models.py:466
+msgid "LOD missing :("
+msgstr ""
+
+#: .\edna\models.py:469
+msgid "PCR"
+msgstr ""
+
+#: .\edna\models.py:470
+msgid "assay"
+msgstr ""
+
+#: .\edna\models.py:471
+msgid "threshold"
+msgstr ""
+
+#: .\edna\models.py:472
+msgid "Ct"
+msgstr ""
+
+#: .\edna\models.py:473
+msgid "Undetermined?"
+msgstr ""
+
+#: .\edna\models.py:477
+#, fuzzy
+#| msgid "West"
+msgid "result"
+msgstr "ouest"
+
+#: .\edna\models.py:478
+msgid " eDNA concentration (Pg/L)"
+msgstr ""
+
+#: .\edna\templates\edna\_assays.html:8
+msgid "Assays Tested"
+msgstr ""
+
+#: .\edna\templates\edna\_assays.html:63
+#: .\edna\templates\edna\_extracts.html:13
+#: .\edna\templates\edna\_filters.html:12 .\edna\templates\edna\_pcrs.html:15
+msgid "Total:"
+msgstr ""
+
+#: .\edna\templates\edna\_extracts.html:6
+#, fuzzy
+#| msgid "No observations"
+msgid "DNA Extractions"
+msgstr "Aucune observations"
+
+#: .\edna\templates\edna\_filters.html:5
+#: .\edna\templates\edna\filtration_batch_detail.html:28
+#, fuzzy
+#| msgid "Sites"
+msgid "Filters"
+msgstr "Les emplacements"
+
+#: .\edna\templates\edna\_pcrs.html:8
+msgid "qPCR Runs"
+msgstr ""
+
+#: .\edna\templates\edna\_table_navigation.html:6
+msgid "Move right"
+msgstr ""
+
+#: .\edna\templates\edna\_table_navigation.html:7
+msgid "Move left"
+msgstr ""
+
+#: .\edna\templates\edna\_table_navigation.html:8
+msgid "Move up"
+msgstr ""
+
+#: .\edna\templates\edna\_table_navigation.html:9
+msgid "Move down"
+msgstr ""
+
+#: .\edna\templates\edna\assay_detail.html:8
+#: .\edna\templates\edna\collection_detail.html:23
+#: .\edna\templates\edna\extraction_batch_detail.html:8
+#: .\edna\templates\edna\filtration_batch_detail.html:8
+#: .\edna\templates\edna\pcr_batch_detail.html:8
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:14
+#: .\edna\templates\edna\sample_detail.html:23
+#: .\edna\templates\edna\species_detail.html:8
+msgid "Edit"
+msgstr "Modifier"
+
+#: .\edna\templates\edna\assay_detail.html:9
+#: .\edna\templates\edna\collection_detail.html:24
+#: .\edna\templates\edna\extraction_batch_detail.html:9
+#: .\edna\templates\edna\filtration_batch_detail.html:9
+#: .\edna\templates\edna\pcr_batch_detail.html:9
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:15
+#: .\edna\templates\edna\sample_detail.html:24
+#: .\edna\templates\edna\species_detail.html:9
+msgid "Delete"
+msgstr "Supprimer"
+
+#: .\edna\templates\edna\base\_app_title.html:2
+msgid "eDNA Krabappel"
+msgstr ""
+
+#: .\edna\templates\edna\base\_nav_left_auth.html:4
+msgid "Home"
+msgstr "Accueil"
+
+#: .\edna\templates\edna\base\_nav_left_auth.html:10
+msgid "Reports"
+msgstr "Rapports"
+
+#: .\edna\templates\edna\base\_nav_left_auth.html:16
+msgid "Settings"
+msgstr "Paramètres"
+
+#: .\edna\templates\edna\base\_nav_left_auth.html:23
+msgid "qPCR / IPC Assays"
+msgstr ""
+
+#: .\edna\templates\edna\base\_nav_left_auth.html:26
+msgid "Tags"
+msgstr ""
+
+#: .\edna\templates\edna\base\_nav_left_auth.html:29
+msgid "Fitlration Types"
+msgstr ""
+
+#: .\edna\templates\edna\base\_nav_left_auth.html:32
+msgid "DNA Extraction Protocols"
+msgstr ""
+
+#: .\edna\templates\edna\base\_nav_left_auth.html:35
+#, fuzzy
+#| msgid "Samples"
+msgid "Sample Types"
+msgstr "Les échantillons"
+
+#: .\edna\templates\edna\base\_nav_left_auth.html:38
+msgid "Master Mixes"
+msgstr ""
+
+#: .\edna\templates\edna\collection_detail.html:25
+#, fuzzy
+#| msgid "Add Site"
+msgid "Add a File"
+msgstr "Ajouter un emplacement"
+
+#: .\edna\templates\edna\collection_detail.html:39
+msgid "Associated Files"
+msgstr ""
+
+#: .\edna\templates\edna\collection_detail.html:58
+msgid "There are no files attached to this collection."
+msgstr ""
+
+#: .\edna\templates\edna\collection_detail.html:74
+#, fuzzy
+#| msgid "Add a New Sample"
+msgid "New Sample"
+msgstr "Ajouter un échantillon"
+
+#: .\edna\templates\edna\collection_detail.html:75
+msgid "Import Samples from CSV"
+msgstr ""
+
+#: .\edna\templates\edna\collection_detail.html:76
+msgid "Tabular Edit"
+msgstr ""
+
+#: .\edna\templates\edna\collection_detail.html:78
+#, fuzzy
+#| msgid "View Samples"
+msgid "Field Samples"
+msgstr "Afficher les échantillons"
+
+#: .\edna\templates\edna\collection_detail.html:113
+#, fuzzy
+#| msgid "This region has no sites."
+msgid "This collection has no samples."
+msgstr "Cette région n'a pas d'emplacements."
+
+#: .\edna\templates\edna\components\add_pcr_overlay.html:8
+#: .\edna\templates\edna\components\add_pcr_overlay.html:16
+#, fuzzy
+#| msgid "Add a New Sample"
+msgid "Add a qPCR"
+msgstr "Ajouter un échantillon"
+
+#: .\edna\templates\edna\components\add_pcr_overlay.html:22
+msgid "# to add"
+msgstr ""
+
+#: .\edna\templates\edna\components\add_pcr_overlay.html:26
+#: .\edna\templates\edna\components\extract_import_overlay.html:82
+msgid "Which assays to test?"
+msgstr ""
+
+#: .\edna\templates\edna\components\add_pcr_overlay.html:35
+#: .\edna\templates\edna\components\add_pcr_overlay.html:36
+msgid "Add"
+msgstr ""
+
+#: .\edna\templates\edna\components\add_pcr_overlay.html:37
+#: .\edna\templates\edna\components\extract_import_overlay.html:95
+#: .\edna\templates\edna\components\filter_import_overlay.html:70
+#: .\edna\templates\edna\components\sample_import_overlay.html:70
+#: .\edna\templates\edna\sample_data_entry.html:24
+#: .\edna\templates\edna\sample_data_entrytable.html:8
+msgid "Back"
+msgstr "Retour"
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:8
+msgid "Import DNA Extracts"
+msgstr ""
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:16
+msgid "Import Extracts"
+msgstr ""
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:26
+msgid "Please select the extracts you wish to import from the list below"
+msgstr ""
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:37
+msgid "Extract Id"
+msgstr ""
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:40
+#: .\edna\templates\edna\components\extract_import_overlay.html:64
+msgid "Extraction Number"
+msgstr ""
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:44
+#: .\edna\templates\edna\components\filter_import_overlay.html:38
+msgid "Filter by batch"
+msgstr ""
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:54
+msgid "Unprocessed DNA only"
+msgstr ""
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:65
+#: .\edna\templates\edna\components\filter_import_overlay.html:59
+#, fuzzy
+#| msgid "Add a New Sample"
+msgid "Batch"
+msgstr "Ajouter un échantillon"
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:72
+msgid "Extracts: "
+msgstr ""
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:72
+#: .\edna\templates\edna\components\filter_import_overlay.html:64
+#: .\edna\templates\edna\components\sample_import_overlay.html:64
+#, fuzzy
+#| msgid "Delete"
+msgid "Selected: "
+msgstr "Supprimer"
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:78
+msgid "# of technical replicates"
+msgstr ""
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:93
+#: .\edna\templates\edna\components\extract_import_overlay.html:94
+#: .\edna\templates\edna\components\filter_import_overlay.html:69
+#: .\edna\templates\edna\components\sample_import_overlay.html:69
+#, fuzzy
+#| msgid "Reports"
+msgid "Import"
+msgstr "Rapports"
+
+#: .\edna\templates\edna\components\extract_import_overlay.html:151
+msgid "You did not select any extracts to import!"
+msgstr ""
+
+#: .\edna\templates\edna\components\filter_import_overlay.html:8
+#: .\edna\templates\edna\components\filter_import_overlay.html:16
+#, fuzzy
+#| msgid "Sites"
+msgid "Import Filters"
+msgstr "Les emplacements"
+
+#: .\edna\templates\edna\components\filter_import_overlay.html:26
+msgid "Please select the filters you wish to import from the list below"
+msgstr ""
+
+#: .\edna\templates\edna\components\filter_import_overlay.html:31
+#, fuzzy
+#| msgid "Sites"
+msgid "Filter Id"
+msgstr "Les emplacements"
+
+#: .\edna\templates\edna\components\filter_import_overlay.html:34
+msgid "Tube Id"
+msgstr ""
+
+#: .\edna\templates\edna\components\filter_import_overlay.html:48
+msgid "Unextracted filters only"
+msgstr ""
+
+#: .\edna\templates\edna\components\filter_import_overlay.html:58
+msgid "Tube"
+msgstr ""
+
+#: .\edna\templates\edna\components\filter_import_overlay.html:64
+#, fuzzy
+#| msgid "Sites"
+msgid "Filters: "
+msgstr "Les emplacements"
+
+#: .\edna\templates\edna\components\filter_import_overlay.html:118
+msgid "You did not select any filters to import!"
+msgstr ""
+
+#: .\edna\templates\edna\components\sample_import_overlay.html:8
+#: .\edna\templates\edna\components\sample_import_overlay.html:16
+#, fuzzy
+#| msgid "Samples"
+msgid "Import Samples"
+msgstr "Les échantillons"
+
+#: .\edna\templates\edna\components\sample_import_overlay.html:26
+msgid "Please select the samples you wish to import from the list below"
+msgstr ""
+
+#: .\edna\templates\edna\components\sample_import_overlay.html:31
+#, fuzzy
+#| msgid "Sample #"
+msgid "Sample Id"
+msgstr "No. d'échantillon "
+
+#: .\edna\templates\edna\components\sample_import_overlay.html:34
+msgid "Location (any part)"
+msgstr ""
+
+#: .\edna\templates\edna\components\sample_import_overlay.html:38
+#, fuzzy
+#| msgid "section"
+msgid "Filter by collection"
+msgstr "section"
+
+#: .\edna\templates\edna\components\sample_import_overlay.html:48
+#, fuzzy
+#| msgid "sample"
+msgid "Unfiltered samples only"
+msgstr "échantillon"
+
+#: .\edna\templates\edna\components\sample_import_overlay.html:58
+msgid "Bottle"
+msgstr ""
+
+#: .\edna\templates\edna\components\sample_import_overlay.html:59
+#, fuzzy
+#| msgid "section"
+msgid "Collection"
+msgstr "section"
+
+#: .\edna\templates\edna\components\sample_import_overlay.html:64
+#, fuzzy
+#| msgid "Samples"
+msgid "Samples: "
+msgstr "Les échantillons"
+
+#: .\edna\templates\edna\components\sample_import_overlay.html:117
+msgid "You did not select any samples to import!"
+msgstr ""
+
+#: .\edna\templates\edna\extraction_batch_detail.html:29
+msgid "Tubes"
+msgstr ""
+
+#: .\edna\templates\edna\extraction_batch_detail.html:30
+#, fuzzy
+#| msgid "Add Site"
+msgid "Add a Tube"
+msgstr "Ajouter un emplacement"
+
+#: .\edna\templates\edna\extraction_batch_detail.html:36
+msgid "Default extraction type"
+msgstr ""
+
+#: .\edna\templates\edna\extraction_batch_detail.html:49
+#, fuzzy
+#| msgid "No sections have been added to this dive yet."
+msgid "No extracts have been added to this batch."
+msgstr "Aucune section n'a encore été ajoutée à cette plongée."
+
+#: .\edna\templates\edna\extraction_batch_detail.html:58
+#: .\edna\templates\edna\pcr_batch_detail.html:52
+msgid "Extraction ID"
+msgstr ""
+
+#: .\edna\templates\edna\extraction_batch_detail.html:67
+#: .\edna\templates\edna\pcr_batch_detail.html:55
+msgid "Populate!"
+msgstr ""
+
+#: .\edna\templates\edna\extraction_batch_detail.html:84
+msgid "Extraction blank"
+msgstr ""
+
+#: .\edna\templates\edna\extraction_batch_detail.html:197
+#: .\edna\templates\edna\pcr_batch_detail.html:219
+msgid "What is your the first well number (e.g. A1)?"
+msgstr ""
+
+#: .\edna\templates\edna\extraction_batch_detail.html:212
+#: .\edna\templates\edna\pcr_batch_detail.html:234
+msgid ""
+"Sorry, you have entered an invalid well number. We were expecting something "
+"amongst the following:"
+msgstr ""
+
+#: .\edna\templates\edna\extraction_batch_detail.html:302
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:250
+msgid "How many tubes do you want to add?"
+msgstr ""
+
+#: .\edna\templates\edna\extraction_batch_detail.html:324
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:272
+msgid "Are you sure you want to delete this tube?"
+msgstr ""
+
+#: .\edna\templates\edna\filtration_batch_detail.html:29
+#, fuzzy
+#| msgid "Add Site"
+msgid "Add a Filter"
+msgstr "Ajouter un emplacement"
+
+#: .\edna\templates\edna\filtration_batch_detail.html:35
+msgid "Default filtration type"
+msgstr ""
+
+#: .\edna\templates\edna\filtration_batch_detail.html:41
+msgid "Default filtration volume (ml)"
+msgstr ""
+
+#: .\edna\templates\edna\filtration_batch_detail.html:52
+#, fuzzy
+#| msgid "No sections have been added to this dive yet."
+msgid "No filters have been added to this batch."
+msgstr "Aucune section n'a encore été ajoutée à cette plongée."
+
+#: .\edna\templates\edna\filtration_batch_detail.html:85
+msgid "Filtration blank"
+msgstr ""
+
+#: .\edna\templates\edna\filtration_batch_detail.html:279
+msgid "How many filters do you want to add?"
+msgstr ""
+
+#: .\edna\templates\edna\filtration_batch_detail.html:301
+msgid "Are you sure you want to delete this filter?"
+msgstr ""
+
+#: .\edna\templates\edna\form.html:31
+msgid "Degrees (DD)"
+msgstr "Degrés (DD)"
+
+#: .\edna\templates\edna\form.html:32
+msgid "Minutes (MM.mmmmm)"
+msgstr "Minutes (MM.mmmmm)"
+
+#: .\edna\templates\edna\index.html:22
+msgid "Welcome to eDNA Krabappel"
+msgstr ""
+
+#: .\edna\templates\edna\index.html:25
+msgid "eDNA Sample Archive and Tracking Tool"
+msgstr ""
+
+#: .\edna\templates\edna\index.html:30 .\edna\views.py:279 .\edna\views.py:291
+#: .\edna\views.py:299 .\edna\views.py:332 .\edna\views.py:342
+#: .\edna\views.py:393 .\edna\views.py:502 .\edna\views.py:535
+#: .\edna\views.py:551 .\edna\views.py:567
+#, fuzzy
+#| msgid "section"
+msgid "Collections"
+msgstr "section"
+
+#: .\edna\templates\edna\index.html:34
+msgid "Lab Services"
+msgstr ""
+
+#: .\edna\templates\edna\index.html:37 .\edna\templates\edna\index.html:50
+msgid "Filtration"
+msgstr ""
+
+#: .\edna\templates\edna\index.html:38
+msgid "DNA Extraction"
+msgstr ""
+
+#: .\edna\templates\edna\index.html:39 .\edna\templates\edna\index.html:52
+msgid "qPCR"
+msgstr ""
+
+#: .\edna\templates\edna\index.html:46
+#, fuzzy
+#| msgid "Add Site"
+msgid "Find a Sample"
+msgstr "Ajouter un emplacement"
+
+#: .\edna\templates\edna\index.html:49
+msgid "Field"
+msgstr ""
+
+#: .\edna\templates\edna\index.html:51
+msgid "Extraction"
+msgstr ""
+
+#: .\edna\templates\edna\index.html:58
+msgid "Download eDNA Fieldsheet"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detail.html:28 .\edna\views.py:491
+#: .\edna\views.py:768 .\edna\views.py:845 .\edna\views.py:897
+msgid "PCRs"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detail.html:41
+#, fuzzy
+#| msgid "No sections have been added to this dive yet."
+msgid "No qPCRs have been added to this batch."
+msgstr "Aucune section n'a encore été ajoutée à cette plongée."
+
+#: .\edna\templates\edna\pcr_batch_detail.html:51
+msgid "Type"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detail.html:71
+#, fuzzy
+#| msgid "Samples"
+msgid "Simplex"
+msgstr "Les échantillons"
+
+#: .\edna\templates\edna\pcr_batch_detail.html:72
+msgid "Duplex"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detail.html:82
+#, fuzzy
+#| msgid "Back"
+msgid "qPCR Blank"
+msgstr "Retour"
+
+#: .\edna\templates\edna\pcr_batch_detail.html:323
+msgid "Are you sure you want to delete this row?"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:25
+#: .\edna\templates\edna\sample_data_entrytable.html:35
+msgid "Samples"
+msgstr "Les échantillons"
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:26
+#: .\edna\templates\edna\sample_data_entry.html:23
+#, fuzzy
+#| msgid "Add Site"
+msgid "Add a Sample"
+msgstr "Ajouter un emplacement"
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:27
+msgid "Import all non-processed extractions"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:32
+msgid "Default plate ID"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:36
+msgid "Default IPC added"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:40
+msgid "Default PCR number prefix"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:44
+msgid "Starting PCR number suffix"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:55
+#, fuzzy
+#| msgid "No sections have been added to this dive yet."
+msgid "No PCRs have been added to this batch."
+msgstr "Aucune section n'a encore été ajoutée à cette plongée."
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:67
+msgid "PCR number"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:77
+msgid "Species<br>tested"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:86
+#, fuzzy
+#| msgid "Back"
+msgid "Blank"
+msgstr "Retour"
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:134
+#, fuzzy
+#| msgid "Observations"
+msgid "Species Observations"
+msgstr "Les observations"
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:142
+#, fuzzy
+#| msgid "No sections have been added to this dive yet."
+msgid "No species observations have been recorded."
+msgstr "Aucune section n'a encore été ajoutée à cette plongée."
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:160
+msgid "----"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:185
+msgid "Add New Species Observation"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:186
+#, fuzzy
+#| msgid "All Done!"
+msgid "Done"
+msgstr "Terminé!"
+
+#: .\edna\templates\edna\pcr_batch_detailOLD.html:282
+msgid "Are you sure you want to delete this observation?"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_import_form.html:24
+msgid "qPCR Import Form:"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_import_form.html:28
+#: .\edna\templates\edna\sample_import_form.html:31
+msgid "the file must be in csv format"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_import_form.html:31
+msgid "use the prescibed template"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_import_form.html:31
+msgid "download here"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_import_form.html:34
+msgid "here are descriptions of the fields. red = mandatory"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_import_form.html:41
+#, fuzzy
+#| msgid "Add a New Sample"
+msgid "PCR Batch Level"
+msgstr "Ajouter un échantillon"
+
+#: .\edna\templates\edna\pcr_batch_import_form.html:119
+msgid "PCR Level"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_import_form.html:174
+msgid "Assay Level"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_import_form.html:241
+#: .\edna\templates\edna\sample_import_form.html:162
+msgid "Submit"
+msgstr ""
+
+#: .\edna\templates\edna\pcr_batch_import_form.html:242
+#: .\edna\templates\edna\sample_import_form.html:165
+msgid "Cancel"
+msgstr ""
+
+#: .\edna\templates\edna\report_search.html:12
+msgid "Please select a report"
+msgstr "Veuillez sélectionner un rapport"
+
+#: .\edna\templates\edna\sample_data_entry.html:21
+#, fuzzy
+#| msgid "Data Entry Mode"
+msgid "Tabular Edit Mode"
+msgstr "Mode de saisie des données"
+
+#: .\edna\templates\edna\sample_data_entry.html:29
+msgid "Default sample type"
+msgstr ""
+
+#: .\edna\templates\edna\sample_data_entry.html:48
+#, fuzzy
+#| msgid "No sections have been added to this dive yet."
+msgid "No samples have been added to this collection."
+msgstr "Aucune section n'a encore été ajoutée à cette plongée."
+
+#: .\edna\templates\edna\sample_data_entry.html:299
+#: .\edna\templates\edna\sample_data_entrytable.html:1480
+msgid "How many samples do you want to add?"
+msgstr ""
+
+#: .\edna\templates\edna\sample_data_entry.html:307
+#: .\edna\templates\edna\sample_data_entrytable.html:1502
+msgid "Are you sure you want to delete this sample?"
+msgstr ""
+
+#: .\edna\templates\edna\sample_detail.html:29
+#, fuzzy
+#| msgid "Sample #"
+msgid "Sample Detail"
+msgstr "No. d'échantillon "
+
+#: .\edna\templates\edna\sample_import_form.html:27
+msgid "Sample Import Form:"
+msgstr ""
+
+#: .\edna\templates\edna\sample_import_form.html:34
+msgid "the order of the columns in the file is NOT important"
+msgstr ""
+
+#: .\edna\templates\edna\sample_import_form.html:37
+msgid "the presence of extra headers (i.e. not listed below) will be ignored"
+msgstr ""
+
+#: .\edna\templates\edna\sample_import_form.html:40
+msgid "the file must have the follow format (headers should be in lowercase!):"
+msgstr ""
+
+#: .\edna\templates\edna\sample_import_form.html:43
+msgid "red = mandatory"
+msgstr ""
+
+#: .\edna\utils.py:58
+msgid "metadata"
+msgstr ""
+
+#: .\edna\utils.py:87
+#, fuzzy
+#| msgid "Samples"
+msgid "sample"
+msgstr "Les échantillons"
+
+#: .\edna\utils.py:88
+#, fuzzy
+#| msgid "Sites"
+msgid "filter"
+msgstr "Les emplacements"
+
+#: .\edna\utils.py:89
+#, fuzzy
+#| msgid "New Section"
+msgid "DNA extraction"
+msgstr "Nouvelle section"
+
+#: .\edna\views.py:208 .\edna\views.py:218 .\edna\views.py:226
+msgid "Assay"
+msgstr ""
+
+#: .\edna\views.py:261
+#, fuzzy
+#| msgid "Add a New Sample"
+msgid "Add a New Collection"
+msgstr "Ajouter un échantillon"
+
+#: .\edna\views.py:264
+msgid "collection date"
+msgstr ""
+
+#: .\edna\views.py:269
+#, fuzzy
+#| msgid "sample"
+msgid "sample count"
+msgstr "échantillon"
+
+#: .\edna\views.py:317 .\edna\views.py:492 .\edna\views.py:846
+#: .\edna\views.py:898 .\edna\views.py:946
+msgid "assays tested"
+msgstr ""
+
+#: .\edna\views.py:396
+#, fuzzy
+#| msgid "Data Entry Mode"
+msgid "Data Entry"
+msgstr "Mode de saisie des données"
+
+#: .\edna\views.py:489 .\edna\views.py:609
+#, fuzzy
+#| msgid "Sites"
+msgid "filters"
+msgstr "Les emplacements"
+
+#: .\edna\views.py:490 .\edna\views.py:844
+#, fuzzy
+#| msgid "section"
+msgid "extractions"
+msgstr "section"
+
+#: .\edna\views.py:602
+msgid "Add a New Filtration Batch"
+msgstr ""
+
+#: .\edna\views.py:678
+msgid "Add a New Extraction Batch"
+msgstr ""
+
+#: .\edna\views.py:686
+msgid "Extractions"
+msgstr ""
+
+#: .\edna\views.py:696 .\edna\views.py:708 .\edna\views.py:716
+#: .\edna\views.py:740
+msgid "Extraction Batches"
+msgstr ""
+
+#: .\edna\views.py:756
+#, fuzzy
+#| msgid "Add a New Sample"
+msgid "Add a New PCR Batch"
+msgstr "Ajouter un échantillon"
+
+#: .\edna\views.py:758
+msgid "qPCR Batches"
+msgstr ""
+
+#: .\edna\views.py:773
+msgid "Import from Template"
+msgstr ""
+
+#: .\edna\views.py:982
+#, fuzzy
+#| msgid "Reports"
+msgid "eDNA Reports"
+msgstr "Rapports"
+
+#, fuzzy
+#~| msgid "sample count"
+#~ msgid "bottle unique identifier"
+#~ msgstr "nombre des échantillons"
+
+#, fuzzy
+#~| msgid "section"
+#~ msgid "site description"
+#~ msgstr "section"
+
+#, fuzzy
+#~| msgid "sample"
+#~ msgid "sampler(s)"
+#~ msgstr "échantillon"
+
+#, fuzzy
+#~| msgid "comment"
+#~ msgid "field comments"
+#~ msgstr "commentaire"
+
+#, fuzzy
+#~| msgid "start latitude"
+#~ msgid "start time"
+#~ msgstr "latitude de depart"
+
+#~ msgid "Substrate total percentage:"
+#~ msgstr "Pourcentage total du substrat:"
+
+#~ msgid "Save Section"
+#~ msgstr "Enregistrer la section"
+
+#~ msgid "Add (Enter)"
+#~ msgstr "Ajouter (retour)"
+
+#~ msgid "This section has no observations"
+#~ msgstr "Cette section n'a pas d'observations"
+
+#~ msgid "This dive has no observations."
+#~ msgstr "Cette plongée n'a pas d'observation."
+
+#~ msgid "Add Transect"
+#~ msgstr "Ajouter un transect"
+
+#~ msgid "Transects"
+#~ msgstr "Les transects"
+
+#~ msgid "No. of dives"
+#~ msgstr "No. de plongées"
+
+#~ msgid "This site has no transects."
+#~ msgstr "Ce emplacement n'a pas de transects."
+
+#~ msgid "North"
+#~ msgstr "nord"
+
+#~ msgid "Northeast"
+#~ msgstr "nord-est"
+
+#~ msgid "East"
+#~ msgstr "est"
+
+#~ msgid "Southeast"
+#~ msgstr "sud-est"
+
+#~ msgid "South"
+#~ msgstr "sud"
+
+#~ msgid "Southwest"
+#~ msgstr "sud-ouest"
+
+#~ msgid "Northwest"
+#~ msgstr "nord-ouest"
+
+#~ msgid "Left"
+#~ msgstr "à gauche"
+
+#~ msgid "Right"
+#~ msgstr "à droite"
+
+#~ msgid "0 - unknown"
+#~ msgstr "0 - inconnue"
+
+#~ msgid "1 - male"
+#~ msgstr "1 - mâle"
+
+#~ msgid "2 - female"
+#~ msgstr "2 - femâle"
+
+#~ msgid "0 - no eggs"
+#~ msgstr "0 - pas d'oeufs"
+
+#~ msgid "b - berried"
+#~ msgstr "b - berried"
+
+#~ msgid "b1 - berried with new eggs"
+#~ msgstr "b1 - berried avec œufs nouveau"
+
+#~ msgid "b2 - berried with black eggs"
+#~ msgstr "b2 - berried avec œufs noirs"
+
+#~ msgid "b3 - berried with developed eggs"
+#~ msgstr "b3 - berried avec œufs développés"
+
+#~ msgid "1 - certain"
+#~ msgstr "1- certain"
+
+#~ msgid "0 - uncertain"
+#~ msgstr "0 - pas certain"
+
+#~ msgid "Region"
+#~ msgstr "Région"
+
+#~ msgid "This must occur on the same day as the sample: {}"
+#~ msgstr "This must occur on the same day as the sample: {}"
+
+#~ msgid "weather notes"
+#~ msgstr "notes météorologiques"
+
+#~ msgid "No. of transects"
+#~ msgstr "Nombre des transects"
+
+#~ msgid "No. of samples"
+#~ msgstr "Nombre des echantillons"
+
+#~ msgid "New Dive"
+#~ msgstr "Nouvelle plongée"
+
+#~ msgid "Dives"
+#~ msgstr "Les plongées"
+
+#~ msgid "This sample has no dives."
+#~ msgstr "Cet échantillon n'a pas de plongées."
+
+#~ msgid "abbreviation"
+#~ msgstr "abréviation"
+
+#~ msgid "latitude (degrees)"
+#~ msgstr "latitude (degrés)"
+
+#~ msgid "latitude (minutes)"
+#~ msgstr "latitude (minutes)"
+
+#~ msgid "longitude (degrees)"
+#~ msgstr "longitude (degrés)"
+
+#~ msgid "longitude (minutes)"
+#~ msgstr "longitude (minutes)"
+
+#~ msgid "latitude (decimal degrees)"
+#~ msgstr "latitude (degrés décimaux)"
+
+#~ msgid "longitude (decimal degrees)"
+#~ msgstr "longitude (degrés décimaux)"
+
+#~ msgid "name"
+#~ msgstr "nom"
+
+#~ msgid "start latitude (minutes)"
+#~ msgstr "latitude de départ (minutes)"
+
+#~ msgid "start longitude"
+#~ msgstr "longitude de depart"
+
+#~ msgid "start longitude (minutes)"
+#~ msgstr "longitude de départ (minutes)"
+
+#~ msgid "end latitude (minutes)"
+#~ msgstr "latitude de fin (minutes)"
+
+#~ msgid "end longitude (minutes)"
+#~ msgstr "longitude de fin (minutes)"
+
+#~ msgid "start latitude (decimal degrees)"
+#~ msgstr "latitude de départ (degrés décimaux)"
+
+#~ msgid "start longitude (decimal degrees)"
+#~ msgstr "longitude de départ (degrés décimaux)"
+
+#~ msgid "end latitude (decimal degrees)"
+#~ msgstr "latitude de fin (degrés décimaux)"
+
+#~ msgid "end longitude (decimal degrees)"
+#~ msgstr "longitude de fin (degrés décimaux)"
+
+#~ msgid "first name"
+#~ msgstr "prénom"
+
+#~ msgid "transect"
+#~ msgstr "transect"
+
+#~ msgid "diver"
+#~ msgstr "plongeur/euse"
+
+#~ msgid "start descent"
+#~ msgstr "commencer la descente"
+
+#~ msgid "bottom time (min)"
+#~ msgstr "temps au fond (min)"
+
+#~ msgid "max depth (ft)"
+#~ msgstr "profondeur max (ft)"
+
+#~ msgid "side"
+#~ msgstr "côté"
+
+#~ msgid "width (m)"
+#~ msgstr "largeur (m)"
+
+#~ msgid "dive"
+#~ msgstr "ploge"
+
+#~ msgid "5m interval [1-20]"
+#~ msgstr "Intervalle de 5m [1-20]"
+
+#~ msgid "depth (ft)"
+#~ msgstr "profondeur (ft)"
+
+#~ msgid "sand [0-1]"
+#~ msgstr "sable [0-1]"
+
+#~ msgid "mud [0-1]"
+#~ msgstr "vase [0-1]"
+
+#~ msgid "hard [0-1]"
+#~ msgstr "dur [0-1]"
+
+#~ msgid "algae [0-1]"
+#~ msgstr "algue [0-1]"
+
+#~ msgid "gravel [0-1]"
+#~ msgstr "gravier [0-1]"
+
+#~ msgid "cobble [0-1]"
+#~ msgstr "cobble [0-1]"
+
+#~ msgid "pebble [0-1]"
+#~ msgstr "caillou [0-1]"
+
+#~ msgid "sand"
+#~ msgstr "sable"
+
+#~ msgid "mud"
+#~ msgstr "vase"
+
+#~ msgid "hard"
+#~ msgstr "dur"
+
+#~ msgid "algae"
+#~ msgstr "algue"
+
+#~ msgid "gravel"
+#~ msgstr "gravier"
+
+#~ msgid "cobble"
+#~ msgstr "cobble"
+
+#~ msgid "pebble"
+#~ msgstr "caillou"
+
+#~ msgid "sex"
+#~ msgstr "sexe"
+
+#~ msgid "egg status"
+#~ msgstr "statut des œufs"
+
+#~ msgid "carapace length (mm)"
+#~ msgstr "longueur de la carapace (mm)"
+
+#~ msgid "length certainty"
+#~ msgstr "certitude de longeur"
+
+#~ msgid "SCUBA Survey"
+#~ msgstr "Relevé de SCUBA"
+
+#~ msgid "Regions, Sites and Transects"
+#~ msgstr "Régions, emplacement et transects"
+
+#~ msgid "Divers"
+#~ msgstr "Plongeur/euse"
+
+#~ msgid "Gulf Region Lobster Survey Data Entry and Archiving Tool"
+#~ msgstr ""
+#~ "Outil de saisie et d'archivage des données de la relevé de homard de la "
+#~ "région du Golfe"
+
+#~ msgid "Regions"
+#~ msgstr "Régions"
+
+#~ msgid "dive count"
+#~ msgstr "nombre des plongées"
+
+#~ msgid "lobster count"
+#~ msgstr "nombre des homards"
+
+#~ msgid "substrate profile"
+#~ msgstr "profil de substrat"
+
+#~ msgid "dive Id"
+#~ msgstr "identifiant de la ploge"
+
+#~ msgid "observation count"
+#~ msgstr "nombre d'observations"
+
+#~ msgid "Scuba Reports"
+#~ msgstr "Rapports"
+
+#~ msgid "% sand"
+#~ msgstr "% sable"
+
+#~ msgid "% mud"
+#~ msgstr "% vase"
+
+#~ msgid "% hard"
+#~ msgstr "% dur"
+
+#~ msgid "% algae"
+#~ msgstr "% algue"
+
+#~ msgid "% gravel"
+#~ msgstr "% gravier"
+
+#~ msgid "% cobble"
+#~ msgstr "% cobble"
+
+#~ msgid "% pebble"
+#~ msgstr "% caillou"
+
+#~ msgid "certainty rating"
+#~ msgstr "cote de certitude"
+
+#~ msgid "Markdown syntax is supported in this field"
+#~ msgstr "La syntaxe Markdown est prise en charge dans ce champ"
+
+#~ msgid "immature"
+#~ msgstr "immature"
+
+#~ msgid "n/a"
+#~ msgstr "n / a"
+
+#~ msgid "section comment"
+#~ msgstr "commentaire de section"
+
+#~ msgid "% rock"
+#~ msgstr "% roche"

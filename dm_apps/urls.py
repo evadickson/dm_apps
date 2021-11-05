@@ -29,6 +29,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('tracking/', include('tracking.urls')),
     path('__debug__/', include(debug_toolbar.urls)),
+    path('api/shared/', include('shared_models.api.urls')),
+    path('api/tracking/', include('tracking.api.urls')),
 ]
 
 # Add application APIs
@@ -40,6 +42,49 @@ if settings.INSTALLED_APPS.count("travel"):
     urlpatterns.append(
         path('api/', include('travel.api.urls')),
     )
+if settings.INSTALLED_APPS.count("csas2"):
+    urlpatterns.append(
+        path('api/', include('csas2.api.urls')),
+    )
+if settings.INSTALLED_APPS.count("res"):
+    urlpatterns.append(
+        path('api/', include('res.api.urls')),
+    )
+if settings.INSTALLED_APPS.count("scuba"):
+    urlpatterns.append(
+        path('api/', include('scuba.api.urls')),
+    )
+if settings.INSTALLED_APPS.count("trapnet"):
+    urlpatterns.append(
+        path('api/', include('trapnet.api.urls')),
+    )
+if settings.INSTALLED_APPS.count("edna"):
+    urlpatterns.append(
+        path('api/', include('edna.api.urls')),
+    )
+if settings.INSTALLED_APPS.count("grais"):
+    urlpatterns.append(
+        path('api/', include('grais.api.urls')),
+    )
+if settings.INSTALLED_APPS.count("bio_diversity"):
+    urlpatterns.append(
+        path('api/', include('bio_diversity.api.urls')),
+    )
+if settings.INSTALLED_APPS.count("publications"):
+    urlpatterns.append(
+        path('api/', include('publications.api.urls')),
+    )
+if settings.INSTALLED_APPS.count("ihub"):
+    urlpatterns.append(
+        path('api/', include('ihub.api.urls')),
+    )
+if settings.INSTALLED_APPS.count("events"):
+    urlpatterns.extend([
+        path('events/', include('events.urls')),
+        path('api/', include('events.api.urls')),
+    ])
+else:
+    print("not connecting events app")
 
 urlpatterns += i18n_patterns(
     path('', views.IndexView.as_view(), name="index"),
@@ -74,24 +119,29 @@ else:
     print("not connecting grais app")
 
 if settings.INSTALLED_APPS.count("herring"):
-    urlpatterns += i18n_patterns(path('hermorrhage/', include('herring.urls')), prefix_default_language=True)
+    urlpatterns += i18n_patterns(path('herman/', include('herring.urls')), prefix_default_language=True)
 else:
-    print("not connecting hermorrhage app")
+    print("not connecting herman app")
 
 if settings.INSTALLED_APPS.count("camp"):
     urlpatterns += i18n_patterns(path('camp/', include('camp.urls')), prefix_default_language=True)
 else:
     print("not connecting camp app")
 
+if settings.INSTALLED_APPS.count("scuba"):
+    urlpatterns += i18n_patterns(path('scuba/', include('scuba.urls')), prefix_default_language=True)
+else:
+    print("not connecting Scuba app")
+
+if settings.INSTALLED_APPS.count("edna"):
+    urlpatterns += i18n_patterns(path('edna/', include('edna.urls')), prefix_default_language=True)
+else:
+    print("not connecting eDNA app")
+
 if settings.INSTALLED_APPS.count("diets"):
     urlpatterns += i18n_patterns(path('diets/', include('diets.urls')), prefix_default_language=True)
 else:
     print("not connecting diets app")
-
-if settings.INSTALLED_APPS.count("projects"):
-    urlpatterns += i18n_patterns(path('projects/', include('projects.urls')), prefix_default_language=True)
-else:
-    print("not connecting projects app")
 
 if settings.INSTALLED_APPS.count("projects2"):
     urlpatterns += i18n_patterns(path('project-planning/', include('projects2.urls')), prefix_default_language=True)
@@ -107,11 +157,6 @@ if settings.INSTALLED_APPS.count("scifi"):
     urlpatterns += i18n_patterns(path('scifi/', include('scifi.urls')), prefix_default_language=True)
 else:
     print("not connecting scifi app")
-
-if settings.INSTALLED_APPS.count("masterlist"):
-    urlpatterns += i18n_patterns(path('master-list/', include('masterlist.urls')), prefix_default_language=True)
-else:
-    print("not connecting masterlist app")
 
 if settings.INSTALLED_APPS.count("shares"):
     urlpatterns += i18n_patterns(path('gulf-shares/', include('shares.urls')), prefix_default_language=True)
@@ -178,10 +223,34 @@ if settings.INSTALLED_APPS.count("shiny"):
 else:
     print("not connecting shiny app repo")
 
-if settings.INSTALLED_APPS.count("csas"):
-    urlpatterns += i18n_patterns(path('csas/', include('csas.urls')), prefix_default_language=True)
+if settings.INSTALLED_APPS.count("csas2"):
+    urlpatterns += i18n_patterns(path('csas-sccs/', include('csas2.urls')), prefix_default_language=True)
 else:
-    print("not connecting csas app")
+    print("not connecting csas2 app")
+
+
+if settings.INSTALLED_APPS.count("bio_diversity"):
+    urlpatterns += i18n_patterns(path('bio_diversity/', include('bio_diversity.urls')), prefix_default_language=True)
+else:
+    print("not connecting bio_diversity app")
+
+if settings.INSTALLED_APPS.count("maret"):
+    urlpatterns += i18n_patterns(path('maret/', include('maret.urls')), prefix_default_language=True)
+else:
+    print("not connecting maret app")
+
+if settings.INSTALLED_APPS.count("fisheriescape"):
+    urlpatterns += i18n_patterns(path('fisheriescape/', include('fisheriescape.urls')),
+                                 prefix_default_language=True)
+else:
+    print("not connecting fisheriescape app")
+
+
+if settings.INSTALLED_APPS.count("res"):
+    urlpatterns += i18n_patterns(path('res-sub/', include('res.urls')),
+                                 prefix_default_language=True)
+else:
+    print("not connecting res app")
 
 if settings.AZURE_STORAGE_ACCOUNT_NAME == "":
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL,

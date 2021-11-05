@@ -116,3 +116,103 @@ printf "########################################################################
 printf "\n"
 python3.8 manage.py test -b cruises.test
 echo "FINISHED RUNNING TESTS FOR: cruises"
+
+printf "\n"
+printf "\n"
+printf "\n"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+echo "RUNNING TESTS FOR: whalebrary"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+python3.8 manage.py test -b whalebrary.test
+echo "FINISHED RUNNING TESTS FOR: whalebrary"
+
+printf "\n"
+printf "\n"
+printf "\n"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+echo "RUNNING TESTS FOR: bio_diversity"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+python3.8 manage.py test --exclude-tag=Functional -b bio_diversity.test
+echo "FINISHED RUNNING TESTS FOR: bio_diversity"
+
+
+
+printf "\n"
+printf "\n"
+printf "\n"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+echo "RUNNING TESTS FOR: scuba"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+python3.8 manage.py test -b scuba.test
+echo "FINISHED RUNNING TESTS FOR: scuba"
+
+
+printf "\n"
+printf "\n"
+printf "\n"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+echo "RUNNING TESTS FOR: publications"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+python3.8 manage.py test -b publications.test
+echo "FINISHED RUNNING TESTS FOR: publications"
+
+
+
+printf "\n"
+printf "\n"
+printf "\n"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+echo "RUNNING TESTS FOR: eDNA"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+python3.8 manage.py test -b edna.test
+echo "FINISHED RUNNING TESTS FOR: eDNA"
+
+
+
+printf "\n"
+printf "\n"
+printf "\n"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+echo "RUNNING TESTS FOR: fisheriescape"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+python3.8 manage.py test -b fisheriescape.test
+echo "FINISHED RUNNING TESTS FOR: fisheriescape"
+
+
+
+printf "\n"
+printf "\n"
+printf "\n"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+echo "RUNNING TESTS FOR: grais"
+printf "\n"
+printf "#############################################################################################################################"
+printf "\n"
+python3.8 manage.py test -b grais.test
+echo "FINISHED RUNNING TESTS FOR: grais"

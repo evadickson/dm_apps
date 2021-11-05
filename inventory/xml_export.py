@@ -184,9 +184,9 @@ class SupplemantInformation:
                 xml_block = "{}\n\n{}".format(xml_block, xml_temp)
 
         # citations
-        if self.resource.citations.count() > 0:
+        if self.resource.citations2.count() > 0:
             citation_list = ""
-            for citation in self.resource.citations.all():
+            for citation in self.resource.citations2.all():
                 if citation_list == "":
                     citation_list = "{}".format(citation.short_citation)
                 else:
@@ -234,9 +234,9 @@ class SupplemantInformation:
                 xml_block = "{}\n\n{}".format(xml_block, xml_temp)
 
         # citations
-        if self.resource.citations.count() > 0:
+        if self.resource.citations2.count() > 0:
             citation_list = ""
-            for citation in self.resource.citations.all():
+            for citation in self.resource.citations2.all():
                 if citation_list == "":
                     citation_list = "{}".format(citation.short_citation)
                 else:
@@ -912,9 +912,9 @@ def construct(my_resource, pretty=True):
         charstring(CI_OnlineResource, 'gmd:description', web_service.content_type.english_value,
                    web_service.content_type.french_value)
     if pretty:
-        return prettify(root)
+        return prettify(root) if not None else None # DJF: this is being added here because of a periodic failure in unit testing. Not a solution :(
     else:
-        return ElementTree(root)
+        return ElementTree(root) if not None else None
 
 
 def verify(resource):

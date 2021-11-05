@@ -1,40 +1,30 @@
 import csv
-
 from copy import deepcopy
 from datetime import date
-from io import StringIO
 
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.models import User, Group
+from django.db.models import TextField, Value
+from django.db.models.functions import Concat
+from django.http import HttpResponseRedirect, HttpResponse
+from django.shortcuts import render, get_object_or_404
+from django.urls import reverse_lazy, reverse
+from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.utils.translation.trans_null import gettext_lazy
-from idna import unicode
-from unicodecsv import UnicodeWriter
+from django.views.generic import TemplateView
 
-from dm_apps.utils import custom_send_mail
-from lib.functions.custom_functions import listrify
-from shared_models import models as shared_models
-from django.utils.safestring import mark_safe
-from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.decorators import login_required, user_passes_test, permission_required
-from django.templatetags.static import static
-from django.db.models import Count, TextField, F, Sum
-from django.db.models.functions import Concat, datetime
-from django.http import HttpResponseRedirect, HttpResponse, Http404
-from django.shortcuts import render, get_object_or_404
-from django.urls import reverse_lazy, reverse
-from django.views.generic import ListView, UpdateView, DeleteView, CreateView, DetailView, TemplateView, FormView
-from django_filters.views import FilterView
-from django.utils import timezone
 from shared_models.views import CommonPopoutFormView, CommonListView, CommonFilterView, CommonDetailView, \
     CommonDeleteView, CommonCreateView, CommonUpdateView, CommonPopoutUpdateView, CommonPopoutDeleteView, \
-    CommonFormView, CommonHardDeleteView, CommonFormsetView
-from . import models, admin, emails
-from . import forms
+    CommonFormView, CommonHardDeleteView, CommonFormsetView, CommonPopoutCreateView
 from . import filters
-from . import reports
-from .models import TransactionCategory, Location, Tag
-from django.contrib.auth.models import User as AuthUser
+from . import forms
+from . import models, emails
+from .models import TransactionCategory, Location
 
 
 class CloserTemplateView(TemplateView):
@@ -101,6 +91,61 @@ def index(request):
 def admin_tools(request):
     return render(request, 'whalebrary/_admin.html')
 
+## ADMIN USER ACCESS CONTROL ##
+
+
+class UserListView(WhalebraryAdminAccessRequired, CommonFilterView):
+    template_name = "whalebrary/user_list.html"
+    filterset_class = filters.UserFilter
+    home_url_name = "index"
+    paginate_by = 25
+    h1 = "Whalebrary App User List"
+    field_list = [
+        {"name": 'first_name', "class": "", "width": ""},
+        {"name": 'last_name', "class": "", "width": ""},
+        {"name": 'email', "class": "", "width": ""},
+        {"name": 'last_login|{}'.format(gettext_lazy("Last login to DM Apps")), "class": "", "width": ""},
+    ]
+    new_object_url = reverse_lazy("shared_models:user_new")
+
+    def get_queryset(self):
+        queryset = User.objects.order_by("first_name", "last_name").annotate(
+            search_term=Concat('first_name', Value(""), 'last_name', Value(""), 'email', output_field=TextField())
+        )
+        if self.kwargs.get("whalebrary"):
+            queryset = queryset.filter(groups__name__icontains="whalebrary").distinct()
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["whalebrary_admin"] = get_object_or_404(Group, name="whalebrary_admin")
+        context["whalebrary_edit"] = get_object_or_404(Group, name="whalebrary_edit")
+        return context
+
+
+@login_required(login_url='/accounts/login/')
+@user_passes_test(in_whalebrary_admin_group, login_url='/accounts/denied/')
+def toggle_user(request, pk, type):
+    my_user = User.objects.get(pk=pk)
+    whalebrary_admin = get_object_or_404(Group, name="whalebrary_admin")
+    whalebrary_edit = get_object_or_404(Group, name="whalebrary_edit")
+    if type == "admin":
+        # if the user is in the admin group, remove them
+        if whalebrary_admin in my_user.groups.all():
+            my_user.groups.remove(whalebrary_admin)
+        # otherwise add them
+        else:
+            my_user.groups.add(whalebrary_admin)
+    elif type == "edit":
+        # if the user is in the edit group, remove them
+        if whalebrary_edit in my_user.groups.all():
+            my_user.groups.remove(whalebrary_edit)
+        # otherwise add them
+        else:
+            my_user.groups.add(whalebrary_edit)
+    return HttpResponseRedirect("{}#user_{}".format(request.META.get('HTTP_REFERER'), my_user.id))
+
+
 ## ADMIN FORMSETS ##
 
 ## LOCATION ##
@@ -120,7 +165,7 @@ class LocationFormsetView(WhalebraryAdminAccessRequired, CommonFormsetView):
     home_url_name = "whalebrary:index"
     delete_url_name = "whalebrary:delete_location"
 
-    ## TAG ##
+## TAG ##
 
 
 class TagHardDeleteView(WhalebraryAdminAccessRequired, CommonHardDeleteView):
@@ -137,7 +182,7 @@ class TagFormsetView(WhalebraryAdminAccessRequired, CommonFormsetView):
     home_url_name = "whalebrary:index"
     delete_url_name = "whalebrary:delete_tag"
 
-    ## OWNER ##
+## OWNER ##
 
 
 class OwnerHardDeleteView(WhalebraryAdminAccessRequired, CommonHardDeleteView):
@@ -154,7 +199,7 @@ class OwnerFormsetView(WhalebraryAdminAccessRequired, CommonFormsetView):
     home_url_name = "whalebrary:index"
     delete_url_name = "whalebrary:delete_owner"
 
-    ## SIZE ##
+## SIZE ##
 
 
 class SizeHardDeleteView(WhalebraryAdminAccessRequired, CommonHardDeleteView):
@@ -171,7 +216,7 @@ class SizeFormsetView(WhalebraryAdminAccessRequired, CommonFormsetView):
     home_url_name = "whalebrary:index"
     delete_url_name = "whalebrary:delete_size"
 
-    ## ORGANISATION ##
+## ORGANISATION ##
 
 
 class OrganisationHardDeleteView(WhalebraryAdminAccessRequired, CommonHardDeleteView):
@@ -188,7 +233,7 @@ class OrganisationFormsetView(WhalebraryAdminAccessRequired, CommonFormsetView):
     home_url_name = "whalebrary:index"
     delete_url_name = "whalebrary:delete_organisation"
 
-    ## TRAINING ##
+## TRAINING ##
 
 
 class TrainingHardDeleteView(WhalebraryAdminAccessRequired, CommonHardDeleteView):
@@ -205,6 +250,22 @@ class TrainingFormsetView(WhalebraryAdminAccessRequired, CommonFormsetView):
     home_url_name = "whalebrary:index"
     delete_url_name = "whalebrary:delete_training"
 
+
+## SPECIES ##
+
+class SpeciesHardDeleteView(WhalebraryAdminAccessRequired, CommonHardDeleteView):
+    model = models.Species
+    success_url = reverse_lazy("whalebrary:manage_species")
+
+
+class SpeciesFormsetView(WhalebraryAdminAccessRequired, CommonFormsetView):
+    template_name = 'whalebrary/formset.html'
+    h1 = "Manage Species"
+    queryset = models.Species.objects.all()
+    formset_class = forms.SpeciesFormset
+    success_url = reverse_lazy("whalebrary:manage_species")
+    home_url_name = "whalebrary:index"
+    delete_url_name = "whalebrary:delete_species"
 
 # #
 # # ITEM #
@@ -1283,11 +1344,12 @@ class IncidentListView(WhalebraryAccessRequired, CommonFilterView):
     new_btn_text = "New Incident"
 
     queryset = models.Incident.objects.annotate(
-        search_term=Concat('id', 'name', 'species_count', 'submitted', 'first_report', 'location', 'region', 'species',
+        search_term=Concat('id', 'name', 'location', 'region', 'species__name',
                            output_field=TextField()))
 
     field_list = [
         {"name": 'id', "class": "", "width": ""},
+        {"name": 'incident_id|{}'.format(gettext_lazy("Incident ID")), "class": "", "width": "100px"},
         {"name": 'name', "class": "", "width": ""},
         {"name": 'species_count', "class": "", "width": ""},
         {"name": 'submitted', "class": "", "width": ""},
@@ -1296,7 +1358,7 @@ class IncidentListView(WhalebraryAccessRequired, CommonFilterView):
         {"name": 'region', "class": "", "width": ""},
         {"name": 'species', "class": "", "width": ""},
         {"name": 'incident_type', "class": "", "width": ""},
-        {"name": 'exam', "class": "", "width": ""},
+        {"name": 'response', "class": "", "width": ""},
         {"name": 'date_email_sent', "class": "", "width": ""},
     ]
 
@@ -1308,12 +1370,13 @@ class IncidentDetailView(WhalebraryAccessRequired, CommonDetailView):
     model = models.Incident
     field_list = [
         'id',
+        'incident_id|{}'.format(gettext_lazy("Incident ID")),
         'name',
         'species_count',
         'submitted',
+        'reported_by',
         'first_report',
-        'lat',
-        'long',
+        'coordinates',
         'location',
         'region',
         'species',
@@ -1322,7 +1385,10 @@ class IncidentDetailView(WhalebraryAccessRequired, CommonDetailView):
         'incident_type',
         'gear_presence',
         'gear_desc',
-        'exam',
+        'response',
+        'response_type',
+        'response_by',
+        'response_date',
         'necropsy',
         'results',
         'photos',
@@ -1337,12 +1403,29 @@ class IncidentDetailView(WhalebraryAccessRequired, CommonDetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # context for _images.html
+        # context for _image.html
         context["random_image"] = models.Image.objects.first()
         context["image_field_list"] = [
             'title',
             'date_uploaded',
         ]
+
+        # context for _resight.html
+        context["random_resight"] = models.Resight.objects.first()
+        context["resight_field_list"] = [
+            'id',
+            'coordinates',
+            'reported_by',
+            'resight_date',
+            'comments',
+            'date_email_sent',
+        ]
+
+
+        # contexts for incident_detail maps
+        context["all_incidents"] = [i.get_leaflet_dict() for i in models.Incident.objects.filter(latitude__isnull=False, longitude__isnull=False)]
+        context["obj_resights"] = [i.get_leaflet_resight_dict() for i in models.Resight.objects.filter(latitude__isnull=False, longitude__isnull=False, incident__id__iexact=self.kwargs['pk'])]
+        context["mapbox_api_key"] = settings.MAPBOX_API_KEY
 
         return context
 
@@ -1351,14 +1434,10 @@ def send_incident_email(request, pk):
     """simple function to send email with detail_view information"""
     # create a new email object
     incident = get_object_or_404(models.Incident, pk=pk)
-    email = emails.NewIncidentEmail(incident, request)
+    email = emails.NewIncidentEmail(request, incident)
     # send the email object
-    custom_send_mail(
-        subject=email.subject,
-        html_message=email.message,
-        from_email=email.from_email,
-        recipient_list=email.to_list
-    )
+    email.send()
+    # success message
     messages.success(request, "The new incident has been logged and a confirmation email has been sent!")
     # log when the email was sent
     incident.date_email_sent = timezone.now()
@@ -1421,6 +1500,97 @@ class IncidentDeleteView(WhalebraryEditRequiredMixin, CommonDeleteView):
 
     def get_parent_crumb(self):
         return {"title": self.get_object(), "url": reverse_lazy("whalebrary:incident_detail", kwargs=self.kwargs)}
+
+        ## INCIDENT RESIGHT ##
+
+
+def send_resight_email(request, pk):
+    """simple function to send email with detail_view information"""
+    # create a new email object
+    resight = get_object_or_404(models.Resight, pk=pk)
+    email = emails.NewResightEmail(request, resight)
+    # send the email object
+    email.send()
+    # success message
+    messages.success(request, "The new incident has been logged and a confirmation email has been sent!")
+    # log when the email was sent
+    resight.date_email_sent = timezone.now()
+    resight.save()
+    # go to previous page
+    return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
+
+
+class ResightListView(WhalebraryAccessRequired, CommonFilterView):
+    template_name = "whalebrary/list.html"
+    h1 = "Resight List"
+    filterset_class = filters.ResightFilter
+    home_url_name = "whalebrary:index"
+    row_object_url_name = "whalebrary:resight_detail"
+    # new_btn_text = "New Resight"
+
+    queryset = models.Resight.objects.annotate(
+        search_term=Concat('id', 'reported_by', 'comments',
+                           output_field=TextField()))
+
+    field_list = [
+        {"name": 'id', "class": "", "width": ""},
+        {"name": 'reported_by', "class": "", "width": ""},
+        {"name": 'resight_date', "class": "", "width": ""},
+        {"name": 'comments', "class": "", "width": ""},
+        {"name": 'date_email_sent', "class": "", "width": ""},
+    ]
+
+    # def get_new_object_url(self):
+    #     return reverse("whalebrary:resight_new", kwargs=self.kwargs)
+
+
+# class ResightDetailView(WhalebraryAccessRequired, CommonDetailView):
+#     model = models.Resight
+#     field_list = [
+#         'id',
+#         'reported_by',
+#         'resight_date',
+#         'comments',
+#         'date_email_sent',
+#
+#     ]
+#     home_url_name = "whalebrary:index"
+#     parent_crumb = {"title": gettext_lazy("Resight List"), "url": reverse_lazy("whalebrary:resight_list")}
+
+
+class ResightUpdateView(WhalebraryEditRequiredMixin, CommonUpdateView):
+    model = models.Resight
+    form_class = forms.ResightForm
+    template_name = 'whalebrary/form.html'
+    cancel_text = _("Cancel")
+
+    def form_valid(self, form):
+        my_object = form.save()
+        messages.success(self.request, _(f"Resight record successfully updated for : {my_object}"))
+        success_url = reverse_lazy('shared_models:close_me')
+        return HttpResponseRedirect(success_url)
+
+
+class ResightCreateView(WhalebraryEditRequiredMixin, CommonCreateView):
+    model = models.Resight
+    form_class = forms.ResightForm
+    template_name = 'whalebrary/form.html'
+
+    def form_valid(self, form):
+        my_object = form.save()
+        messages.success(self.request, _(f"Resight successfully added for : {my_object}"))
+        return HttpResponseRedirect(reverse_lazy('shared_models:close_me'))
+
+    def get_initial(self):
+        incident = models.Incident.objects.get(pk=self.kwargs['incident'])
+        return {
+            'incident': incident,
+        }
+
+
+class ResightDeleteView(WhalebraryEditRequiredMixin, CommonPopoutDeleteView):
+    model = models.Resight
+    delete_protection = False
 
     ## INCIDENT IMAGE UPLOAD ##
 
@@ -1582,3 +1752,38 @@ class SizedItemSummaryListView(WhalebraryAccessRequired, CommonListView):
         {"name": 'tags', "class": "", "width": ""},
         {"name": 'location', "class": "", "width": ""},
     ]
+
+
+## PLANNING LINKS ##
+
+class PlanningLinkListView(WhalebraryAdminAccessRequired, CommonListView):
+    template_name = "whalebrary/planning_link_list.html"
+    model = models.PlanningLink
+    h1 = "Planning Link List"
+    home_url_name = "whalebrary:index"
+    # new_btn_text = "New Planning Link"
+    # new_object_url_name = "whalebrary:planning_link_new"
+
+    field_list = [
+        {"name": 'id', "class": "", "width": ""},
+        {"name": 'year', "class": "", "width": ""},
+        {"name": 'client', "class": "", "width": ""},
+        {"name": 'description', "class": "", "width": ""},
+        {"name": 'link', "class": "", "width": ""},
+
+        ]
+
+
+class PlanningLinkCreateView(WhalebraryAdminAccessRequired, CommonPopoutCreateView):
+    model = models.PlanningLink
+    form_class = forms.PlanningLinkForm
+
+
+class PlanningLinkUpdateView(WhalebraryAdminAccessRequired, CommonPopoutUpdateView):
+    model = models.PlanningLink
+    form_class = forms.PlanningLinkForm
+    template_name = 'whalebrary/form.html'
+
+
+class PlanningLinkDeleteView(WhalebraryAdminAccessRequired, CommonPopoutDeleteView):
+    model = models.PlanningLink

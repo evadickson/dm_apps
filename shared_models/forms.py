@@ -18,6 +18,7 @@ class SectionForm(forms.ModelForm):
         widgets = {
             'last_modified_by': forms.HiddenInput(),
             'head': forms.Select(attrs=chosen_js),
+            'admin': forms.Select(attrs=chosen_js),
 
         }
 
@@ -44,6 +45,7 @@ class DivisionForm(forms.ModelForm):
         widgets = {
             'last_modified_by': forms.HiddenInput(),
             'head': forms.Select(attrs=chosen_js),
+            'admin': forms.Select(attrs=chosen_js),
         }
 
     def __init__(self, *args, **kwargs):
@@ -64,7 +66,19 @@ class BranchForm(forms.ModelForm):
         widgets = {
             'last_modified_by': forms.HiddenInput(),
             'head': forms.Select(attrs=chosen_js),
+            'admin': forms.Select(attrs=chosen_js),
+        }
 
+class SectorForm(forms.ModelForm):
+    class Meta:
+        model = models.Sector
+        exclude = [
+            'date_last_modified',
+        ]
+        widgets = {
+            'last_modified_by': forms.HiddenInput(),
+            'head': forms.Select(attrs=chosen_js),
+            'admin': forms.Select(attrs=chosen_js),
         }
 
 
@@ -77,7 +91,7 @@ class RegionForm(forms.ModelForm):
         widgets = {
             'last_modified_by': forms.HiddenInput(),
             'head': forms.Select(attrs=chosen_js),
-
+            'admin': forms.Select(attrs=chosen_js),
         }
 
 
@@ -90,8 +104,11 @@ class OrganizationForm(forms.ModelForm):
 class UserCreateForm(forms.Form):
     first_name = forms.CharField(label=gettext_lazy("First name"))
     last_name = forms.CharField(label=gettext_lazy("Last name"))
-    email1 = forms.EmailField(label=gettext_lazy("Email"))
+    email1 = forms.EmailField(label=gettext_lazy("Email"), help_text=gettext_lazy("Please make sure this is the correct email address, as listed in the DFO Active Directory."))
     email2 = forms.EmailField(label=gettext_lazy("Confirm email address"))
+    send_email = forms.BooleanField(required=False, label=gettext_lazy("Send a confirmation email to the new user? "),
+                                    help_text=gettext_lazy(
+                                        "If this is selected, the new user will receive an email with instructions for how to log in. This is the recommended option."))
 
     def clean_email1(self):
         new_email = self.cleaned_data['email1']
@@ -126,7 +143,6 @@ class ScriptForm(forms.ModelForm):
         widgets = {
             'modified_by': forms.HiddenInput(),
         }
-
 
 
 class ResponsibilityCenterForm(forms.ModelForm):

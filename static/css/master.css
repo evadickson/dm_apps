@@ -6,7 +6,7 @@
 
 .bigbrand {
     font-family: 'Montserrat', sans-serif;
-    font-size: 1.5em;
+    /*font-size: 1.25em;*/
     font-weight: bold;
 }
 
@@ -44,6 +44,7 @@
 
 .draw-attention {
     background-color: #e040fb;
+    color: white;
 }
 
 .highlight {
@@ -56,14 +57,6 @@
 
 .test-mode {
     background-color: #fe49ff;
-}
-
-.petri {
-    background-color: wheat;
-}
-
-.plate {
-    background-color: lightgreen;
 }
 
 .nav-map {
@@ -108,12 +101,12 @@
     font-size: small;
 }
 
-.bad {
+.bad, .no {
     background-color: pink;
     color: black;
 }
 
-.good {
+.good, .yes {
     background-color: lightgreen;
     color: black;
 }
@@ -204,6 +197,20 @@
     }
 }
 
+.circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 15px;
+    color: #fff;
+    line-height: 30px;
+    text-align: center;
+    background: #4c4c4c
+}
+
+.bg-navy {
+    background-color: #041d70;
+}
 
 .awesome {
     /*width: 100%;*/
@@ -285,6 +292,17 @@
     .no-print, .no-print * {
         display: none !important;
     }
+
+    .new-page {
+        page-break-after: always;
+    }
+}
+
+
+@media screen {
+    .print-only, .print-only * {
+        display: none !important;
+    }
 }
 
 
@@ -310,4 +328,50 @@
     /* Internet Explorer */
     filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
 
+}
+
+.crumbs {
+    background-color: rgba(255, 255, 255, 0);
+
+}
+
+[v-cloak] {
+    display: none;
+}
+
+.btn-xs {
+    font-size: 10px;
+    padding: 3px 5px;
+}
+
+.w-30 {
+    width: 30%;
+}
+
+.w-35 {
+    width: 35%;
+}
+
+.w-40 {
+    width: 40%;
+}
+
+.w-45 {
+    width: 45%;
+}
+
+.greyed {
+    background-color: #dddcdc;
+}
+
+.pointy {
+    cursor: pointer;
+}
+
+.helper {
+    cursor: help;
+}
+
+.copy-me {
+    cursor: copy;
 }

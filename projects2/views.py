@@ -1,27 +1,31 @@
+import csv
 import json
 import os
 from copy import deepcopy
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Value, TextField
+from django.contrib.auth.models import User, Group
+from django.db import IntegrityError
+from django.db.models import Value, TextField, Q
 from django.db.models.functions import Concat
-from django.http import HttpResponseRedirect, HttpResponse, Http404
+from django.http import HttpResponseRedirect, HttpResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
-from django.utils.translation import gettext as _, gettext_lazy
+from django.utils.translation import gettext as _, gettext_lazy, get_language
 
+from lib.templatetags.custom_filters import nz
 from shared_models import models as shared_models
 from shared_models.views import CommonTemplateView, CommonCreateView, \
-    CommonDetailView, CommonFilterView, CommonDeleteView, CommonUpdateView, CommonListView, CommonHardDeleteView, CommonFormsetView
+    CommonDetailView, CommonFilterView, CommonDeleteView, CommonUpdateView, CommonListView, CommonHardDeleteView, CommonFormsetView, CommonFormView
 from . import filters, forms, models, reports
 from .mixins import CanModifyProjectRequiredMixin, AdminRequiredMixin, ManagerOrAdminRequiredMixin
 from .utils import get_help_text_dict, \
     get_division_choices, get_section_choices, get_project_field_list, get_project_year_field_list, is_management_or_admin, \
-    get_review_score_rubric, get_status_report_field_list
+    get_review_score_rubric, get_status_report_field_list, get_review_field_list, in_projects_admin_group, get_user_fte_breakdown
 
 
 class IndexTemplateView(LoginRequiredMixin, CommonTemplateView):
@@ -47,6 +51,11 @@ class IndexTemplateView(LoginRequiredMixin, CommonTemplateView):
             "region",
             "tdescription|{}".format("description"),
         ]
+        # project count
+        project_ids = [staff.project_year.project_id for staff in self.request.user.staff_instances2.all()]
+        project_count = models.Project.objects.filter(id__in=project_ids).order_by("-updated_at", "title").count()
+        orphen_count = models.Project.objects.filter(years__isnull=True, modified_by=self.request.user).count()
+        context["my_project_count"] = project_count + orphen_count
         return context
 
 
@@ -95,6 +104,10 @@ class ManageProjectsTemplateView(ManagerOrAdminRequiredMixin, CommonTemplateView
         'status',
         'allocated_budget',
         'review_score_percentage',
+        'last_modified',
+        'om_costs',
+        'salary_costs',
+        'capital_costs',
     ]
 
     def get_context_data(self, **kwargs):
@@ -107,9 +120,10 @@ class ManageProjectsTemplateView(ManagerOrAdminRequiredMixin, CommonTemplateView
         return context
 
 
-class MyProjectListView(LoginRequiredMixin, CommonListView):
+class MyProjectListView(LoginRequiredMixin, CommonFilterView):
     template_name = 'projects2/my_project_list.html'
-    h1 = gettext_lazy("My projects")
+    filterset_class = filters.ProjectFilter
+    h1 = gettext_lazy("My Projects")
     home_url_name = "projects2:index"
     container_class = "container-fluid bg-light curvy"
     row_object_url_name = "projects2:project_detail"
@@ -120,7 +134,7 @@ class MyProjectListView(LoginRequiredMixin, CommonListView):
         {"name": 'title', "class": "", "width": ""},
         {"name": 'start_date', "class": "", "width": "150px"},
         {"name": 'lead_staff', "class": "", "width": ""},
-        {"name": 'fiscal_years|{}'.format(_("fiscal years")), "class": "", "width": ""},
+        {"name": 'fiscal_years_display|{}'.format(_("fiscal years")), "class": "", "width": ""},
         {"name": 'has_unsubmitted_years|{}'.format("has unsubmitted years?"), "class": "", "width": ""},
         {"name": 'is_hidden|{}'.format(_("hidden?")), "class": "", "width": ""},
         {"name": 'updated_at', "class": "", "width": "150px"},
@@ -129,6 +143,13 @@ class MyProjectListView(LoginRequiredMixin, CommonListView):
     def get_queryset(self):
         project_ids = [staff.project_year.project_id for staff in self.request.user.staff_instances2.all()]
         return models.Project.objects.filter(id__in=project_ids).order_by("-updated_at", "title")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        orphens = models.Project.objects.filter(years__isnull=True, modified_by=self.request.user)
+        context["orphens"] = orphens
+
+        return context
 
 
 class ProjectCreateView(LoginRequiredMixin, CommonCreateView):
@@ -172,7 +193,8 @@ class ProjectCreateView(LoginRequiredMixin, CommonCreateView):
         my_object.modified_by = self.request.user
         my_object.save()
         messages.success(self.request,
-                         mark_safe(_("Your new project was created successfully! To get started, <b>add a new project year</b>.")))
+                         mark_safe(_(
+                             "<span class='h4'>Your new project was created successfully! To get started, <b class='highlight'>add a new project year</b>.</span>")))
         return HttpResponseRedirect(reverse_lazy("projects2:project_detail", kwargs={"pk": my_object.id}))
 
     def get_initial(self):
@@ -188,7 +210,7 @@ class ProjectDetailView(LoginRequiredMixin, CommonDetailView):
     # parent_crumb = {"title": _("My Projects"), "url": reverse_lazy("projects2:my_project_list")}
 
     def get_active_page_name_crumb(self):
-        return str(self.get_object())
+        return "{} {}".format(_("Project"), self.get_object().id)
 
     def get_h1(self):
         mystr = str(self.get_object())
@@ -202,6 +224,9 @@ class ProjectDetailView(LoginRequiredMixin, CommonDetailView):
         context["project_field_list"] = get_project_field_list(project)
         context["project_year_field_list"] = get_project_year_field_list()
 
+        context["random_review"] = models.Review.objects.first()
+        context["review_field_list"] = get_review_field_list()
+
         context["staff_form"] = forms.StaffForm
         context["random_staff"] = models.Staff.objects.first()
 
@@ -211,17 +236,11 @@ class ProjectDetailView(LoginRequiredMixin, CommonDetailView):
         context["capital_cost_form"] = forms.CapitalCostForm
         context["random_capital_cost"] = models.CapitalCost.objects.first()
 
-        context["gc_cost_form"] = forms.GCCostForm
-        context["random_gc_cost"] = models.GCCost.objects.first()
-
         context["activity_form"] = forms.ActivityForm
         context["random_activity"] = models.Activity.objects.first()
 
-        context["collaborator_form"] = forms.CollaboratorForm
-        context["random_collaborator"] = models.Collaborator.objects.first()
-
-        context["agreement_form"] = forms.AgreementForm
-        context["random_agreement"] = models.CollaborativeAgreement.objects.first()
+        context["collaboration_form"] = forms.CollaborationForm
+        context["random_collaboration"] = models.Collaboration.objects.first()
 
         context["status_report_form"] = forms.StatusReportForm(initial={"user": self.request.user}, instance=project)
         context["random_status_report"] = models.StatusReport.objects.first()
@@ -310,7 +329,7 @@ class ProjectCloneView(ProjectUpdateView):
             new_year.pk = None
             new_year.submitted = None
             new_year.status = 1
-            new_year.notification_email_sent = None
+            new_year.approval_notification_email_sent = None
             new_year.save()
 
             # Now we need to replicate all the related records:
@@ -344,22 +363,8 @@ class ProjectCloneView(ProjectUpdateView):
                 new_rel_obj.project_year = new_year
                 new_rel_obj.save()
 
-            # 4) G&C
-            for old_rel_obj in old_year.gc_costs.all():
-                new_rel_obj = deepcopy(old_rel_obj)
-                new_rel_obj.pk = None
-                new_rel_obj.project_year = new_year
-                new_rel_obj.save()
-
-            # 5) Collaborators and Partners
-            for old_rel_obj in old_year.collaborators.all():
-                new_rel_obj = deepcopy(old_rel_obj)
-                new_rel_obj.pk = None
-                new_rel_obj.project_year = new_year
-                new_rel_obj.save()
-
-            # 6) Collaborative Agreements
-            for old_rel_obj in old_year.agreements.all():
+            # 5) Collaborations
+            for old_rel_obj in old_year.collaborations.all():
                 new_rel_obj = deepcopy(old_rel_obj)
                 new_rel_obj.pk = None
                 new_rel_obj.project_year = new_year
@@ -374,6 +379,24 @@ class ProjectCloneView(ProjectUpdateView):
                 new_rel_obj.save()
 
         return HttpResponseRedirect(reverse_lazy("projects2:project_detail", kwargs={"pk": new_obj.project.id}))
+
+
+class ProjectReferencesDetailView(LoginRequiredMixin, CommonDetailView):
+    model = models.Project
+    template_name = 'projects2/project_references.html'
+    home_url_name = "projects2:index"
+    container_class = "container-fluid bg-light curvy"
+    h1 = gettext_lazy("Project References")
+    active_page_name_crumb = gettext_lazy("Project References")
+
+    def get_parent_crumb(self):
+        return {"title": self.get_object(), "url": reverse("projects2:project_detail", args=[self.get_object().id])}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["citation_form"] = forms.CitationForm
+        context["random_citation"] = shared_models.Citation.objects.first()
+        return context
 
 
 # PROJECT YEAR #
@@ -402,6 +425,14 @@ class ProjectYearCreateView(CanModifyProjectRequiredMixin, CommonCreateView):
         year = form.save(commit=False)
         year.modified_by = self.request.user
         year.save()
+
+        # for good measure, we should add the current user as a staff to this year
+        models.Staff.objects.create(
+            project_year=year,
+            user=self.request.user,
+            employee_type=models.EmployeeType.objects.get(pk=1),
+            is_lead=True,
+        )
 
         return HttpResponseRedirect(
             super().get_success_url() + f"?project_year={year.id}"
@@ -481,7 +512,7 @@ class ProjectYearCloneView(ProjectYearUpdateView):
         new_obj.pk = None
         new_obj.submitted = None
         new_obj.status = 1
-        new_obj.notification_email_sent = None
+        new_obj.approval_notification_email_sent = None
         new_obj.save()
 
         # Now we need to replicate all the related records:
@@ -493,13 +524,17 @@ class ProjectYearCloneView(ProjectYearUpdateView):
             new_rel_obj.save()
 
         # we have to just make sure that the user is a lead on the project. Otherwise they will not be able to edit.
-        my_staff, created = models.Staff.objects.get_or_create(
-            user=self.request.user,
-            project_year=new_obj,
-            employee_type_id=1,
-        )
-        my_staff.lead = True
-        my_staff.save()
+        # but, there is a chance (and likely probability) that they will already be on there.
+        try:
+            my_staff, created = models.Staff.objects.get_or_create(
+                user=self.request.user,
+                project_year=new_obj,
+                employee_type_id=1,
+            )
+            my_staff.lead = True
+            my_staff.save()
+        except IntegrityError:
+            pass
 
         # 2) O&M
         for old_rel_obj in old_obj.omcost_set.all():
@@ -515,22 +550,8 @@ class ProjectYearCloneView(ProjectYearUpdateView):
             new_rel_obj.project_year = new_obj
             new_rel_obj.save()
 
-        # 4) G&C
-        for old_rel_obj in old_obj.gc_costs.all():
-            new_rel_obj = deepcopy(old_rel_obj)
-            new_rel_obj.pk = None
-            new_rel_obj.project_year = new_obj
-            new_rel_obj.save()
-
-        # 5) Collaborators and Partners
-        for old_rel_obj in old_obj.collaborators.all():
-            new_rel_obj = deepcopy(old_rel_obj)
-            new_rel_obj.pk = None
-            new_rel_obj.project_year = new_obj
-            new_rel_obj.save()
-
-        # 6) Collaborative Agreements
-        for old_rel_obj in old_obj.agreements.all():
+        # 5) Collaborations
+        for old_rel_obj in old_obj.collaborations.all():
             new_rel_obj = deepcopy(old_rel_obj)
             new_rel_obj.pk = None
             new_rel_obj.project_year = new_obj
@@ -742,6 +763,70 @@ class UpcomingDateFormsetView(AdminRequiredMixin, CommonFormsetView):
     container_class = "container bg-light curvy"
 
 
+class CSRFThemeFormsetView(AdminRequiredMixin, CommonFormsetView):
+    template_name = 'projects2/formset.html'
+    h1 = "Manage CSRF Themes"
+    queryset = models.CSRFTheme.objects.all()
+    formset_class = forms.CSRFThemeFormset
+    success_url_name = "projects2:manage_csrf_themes"
+    home_url_name = "projects2:index"
+    delete_url_name = "projects2:delete_csrf_theme"
+    container_class = "container bg-light curvy"
+
+
+class CSRFThemeHardDeleteView(AdminRequiredMixin, CommonHardDeleteView):
+    model = models.CSRFTheme
+    success_url = reverse_lazy("projects2:manage_csrf_themes")
+
+
+class CSRFSubThemeFormsetView(AdminRequiredMixin, CommonFormsetView):
+    template_name = 'projects2/formset.html'
+    h1 = "Manage CSRF Sub Themes"
+    queryset = models.CSRFSubTheme.objects.all()
+    formset_class = forms.CSRFSubThemeFormset
+    success_url_name = "projects2:manage_csrf_sub_themes"
+    home_url_name = "projects2:index"
+    delete_url_name = "projects2:delete_csrf_sub_theme"
+    container_class = "container bg-light curvy"
+
+
+class CSRFSubThemeHardDeleteView(AdminRequiredMixin, CommonHardDeleteView):
+    model = models.CSRFSubTheme
+    success_url = reverse_lazy("projects2:manage_csrf_sub_themes")
+
+
+class CSRFPriorityFormsetView(AdminRequiredMixin, CommonFormsetView):
+    template_name = 'projects2/formset.html'
+    h1 = "Manage CSRF Priorities"
+    queryset = models.CSRFPriority.objects.all()
+    formset_class = forms.CSRFPriorityFormset
+    success_url_name = "projects2:manage_csrf_priorities"
+    home_url_name = "projects2:index"
+    delete_url_name = "projects2:delete_csrf_priority"
+    container_class = "container bg-light curvy"
+
+
+class CSRFPriorityHardDeleteView(AdminRequiredMixin, CommonHardDeleteView):
+    model = models.CSRFPriority
+    success_url = reverse_lazy("projects2:manage_csrf_priorities")
+
+
+class CSRFClientInformationFormsetView(AdminRequiredMixin, CommonFormsetView):
+    template_name = 'projects2/formset.html'
+    h1 = "Manage CSRF Client Information"
+    queryset = models.CSRFClientInformation.objects.all()
+    formset_class = forms.CSRFClientInformationFormset
+    success_url_name = "projects2:manage_csrf_client_information"
+    home_url_name = "projects2:index"
+    delete_url_name = "projects2:delete_csrf_client_information"
+    container_class = "container-fluid bg-light curvy"
+
+
+class CSRFClientInformationHardDeleteView(AdminRequiredMixin, CommonHardDeleteView):
+    model = models.CSRFClientInformation
+    success_url = reverse_lazy("projects2:manage_csrf_client_information")
+
+
 # Reference Materials
 class ReferenceMaterialListView(AdminRequiredMixin, CommonListView):
     template_name = "projects2/list.html"
@@ -792,6 +877,84 @@ class ReferenceMaterialDeleteView(AdminRequiredMixin, CommonDeleteView):
     template_name = "projects2/confirm_delete.html"
     delete_protection = False
     container_class = "container bg-light curvy"
+
+
+# ADMIN
+
+
+class AdminStaffListView(AdminRequiredMixin, CommonFilterView):
+    template_name = 'projects2/admin_staff_list.html'
+
+    filterset_class = filters.StaffFilter
+    home_url_name = "projects2:index"
+    h1 = gettext_lazy("Non-DMApps Staff List")
+    h2 = gettext_lazy(
+        "The purpose of this list view is to check if any DFO staff were listed on projects, but were not connected to their dmapps user accounts")
+    field_list = [
+        {"name": 'project_year.fiscal_year', "class": "", "width": ""},
+        {"name": 'smart_name|staff name', "class": "", "width": ""},
+        {"name": 'is_lead', "class": "", "width": ""},
+        {"name": 'employee_type', "class": "", "width": ""},
+    ]
+    row_object_url_name = "projects2:admin_staff_edit"
+
+    def get_queryset(self):
+        qs = models.Staff.objects.filter(user__isnull=True, name__isnull=False).filter(~Q(name__icontains="unknown")).filter(~Q(name__icontains="tbd")).filter(
+            ~Q(name__icontains="BI-")).filter(~Q(name__icontains="PC-")).filter(~Q(name__icontains="EG-")).filter(~Q(name__icontains="determined")).filter(
+            ~Q(name__icontains="to be")).filter(~Q(name__icontains="student")).filter(~Q(name__icontains="casual")).filter(
+            ~Q(name__icontains="technician")).filter(~Q(name__icontains="crew")).filter(~Q(name__icontains="hired")).filter(
+            ~Q(name__icontains="support")).filter(~Q(name__icontains="volunteer")).filter(~Q(name__icontains="staff")).filter(~Q(name__icontains="tba")).filter(
+            ~Q(name__icontains="1")).filter(~Q(name__icontains="2")).filter(~Q(name__icontains="3"))
+
+        qs = qs.order_by('name')
+        return qs
+
+
+class AdminStaffUpdateView(AdminRequiredMixin, CommonUpdateView):
+    '''This is really just for the admin view'''
+    model = models.Staff
+    template_name = 'projects2/admin_staff_form.html'
+    form_class = forms.AdminStaffForm
+    h1 = gettext_lazy("Edit Non-DMApps Staff Member")
+    parent_crumb = {"title": _("Non-registered Staff List"), "url": reverse_lazy("projects2:admin_staff_list")}
+    container_class = "container bg-light curvy"
+
+    def form_valid(self, form):
+        obj = form.save()
+        success_url = reverse("projects2:admin_staff_list")
+        if self.request.META["QUERY_STRING"]:
+            success_url += f"?{self.request.META['QUERY_STRING']}"
+
+        # look for other matches:
+        if obj.user and obj.user.first_name and obj.user.last_name:
+            search_name = f"{obj.user.first_name} {obj.user.last_name}"
+            qs = models.Staff.objects.filter(name__contains=search_name)
+
+            messages.info(self.request, f"Searched, found and replaced {qs.count()} additional matches for '{search_name}'")
+            for staff in qs.all():
+                staff.user = obj.user
+                staff.save()
+
+        return HttpResponseRedirect(success_url)
+
+    def get_initial(self):
+        name = self.get_object().name
+        first = name.split(" ")[0]
+        last = name.split(" ")[1]
+        qs = User.objects.filter(first_name__icontains=first, last_name__icontains=last)
+        if qs.exists() and qs.count() == 1:
+            return dict(user=qs.first().id)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['help_text_dict'] = get_help_text_dict()
+        name = self.get_object().name
+        first = name.split(" ")[0]
+        last = name.split(" ")[1]
+        context['name_count'] = models.Staff.objects.filter(name=name).count()
+        context['match_found'] = User.objects.filter(first_name__icontains=first, last_name__icontains=last).exists()
+
+        return context
 
 
 # STATUS REPORT #
@@ -893,7 +1056,7 @@ class StatusReportUpdateView(CanModifyProjectRequiredMixin, CommonUpdateView):
 class StatusReportReviewUpdateView(ManagerOrAdminRequiredMixin, StatusReportUpdateView):
     form_class = forms.StatusReportReviewForm
     h1 = gettext_lazy("Please provide review comments")
-    container_class = "container-fluid"
+    container_class = "container bg-light curvy"
 
 
 class StatusReportPrintDetailView(LoginRequiredMixin, CommonDetailView):
@@ -919,6 +1082,94 @@ class StatusReportPrintDetailView(LoginRequiredMixin, CommonDetailView):
         context["random_update"] = models.ActivityUpdate.objects.first()
 
         return context
+
+
+# REPORTS #
+###########
+
+
+class ManagementReportSearchFormView(AdminRequiredMixin, CommonFormView):
+    template_name = 'projects2/management_search.html'
+    form_class = forms.ManagementSearchForm
+    h1 = gettext_lazy("Project Planning Reports")
+    success_url = reverse_lazy("shared_models:close_me")
+
+    def form_valid(self, form):
+        report = int(form.cleaned_data["report"])
+
+        #responce = generate_project_status_summary(self)
+        if report == 1:
+            return culture_committee_report(self.request)
+        elif report == 2:
+            return export_csrf_submission_list(self.request)
+        elif report == 3:
+            return project_status_summary(self.request)
+        elif report == 4:
+            return export_project_list(self.request)
+        elif report == 5:
+            return export_sar_workplan(self.request)
+        elif report == 6:
+            return export_regional_staff_allocation(self.request)
+        elif report == 7:
+            return export_project_position_allocation(self.request)
+        elif report == 8:
+            return export_capital_request_costs(self.request)
+        elif report == 9:
+            return export_project_summary(self.request)
+        else:
+            messages.error(self.request, "Report is not available. Please select another report.")
+            return HttpResponseRedirect(reverse("projects2:reports"))
+
+
+class ReportSearchFormView(AdminRequiredMixin, CommonFormView):
+    template_name = 'projects2/report_search.html'
+    form_class = forms.ReportSearchForm
+    h1 = gettext_lazy("Project Planning Reports")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+    def form_valid(self, form):
+        report = int(form.cleaned_data["report"])
+        year = nz(form.cleaned_data["year"], "None")
+        region = nz(form.cleaned_data["region"], "None")
+        division = nz(form.cleaned_data["division"], "None")
+        section = nz(form.cleaned_data["section"], "None")
+
+        if report == 1:
+            return HttpResponseRedirect(reverse("projects2:culture_committee_report"))
+        elif report == 2:
+            return HttpResponseRedirect(reverse("projects2:export_csrf_submission_list") + f'?year={year}&region={region}')
+        elif report == 3:
+            return HttpResponseRedirect(reverse("projects2:export_project_status_summary") + f'?year={year}&region={region}')
+        elif report == 4:
+            return HttpResponseRedirect(reverse("projects2:export_project_list") + f'?year={year}&section={section}&region={region}')
+        elif report == 5:
+            return HttpResponseRedirect(reverse("projects2:export_sar_workplan") + f'?year={year}&region={region}')
+        elif report == 6:
+            return HttpResponseRedirect(reverse("projects2:export_rsa") + f'?year={year}&region={region}')
+        elif report == 7:
+            return HttpResponseRedirect(reverse("projects2:export_ppa") + f'?year={year}&section={section}&region={region}')
+        elif report == 8:
+            return HttpResponseRedirect(reverse("projects2:export_crc") + f'?year={year}&section={section}&division={division}&region={region}')
+        else:
+            messages.error(self.request, "Report is not available. Please select another report.")
+            return HttpResponseRedirect(reverse("projects2:reports"))
+
+
+@login_required()
+def culture_committee_report(request):
+    # year = None if request.GET.get("year") == "None" else int(request.GET.get("year"))
+    file_url = reports.generate_culture_committee_report()
+
+    if os.path.exists(file_url):
+        with open(file_url, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
+            response['Content-Disposition'] = f'inline; filename="dmapps culture committee report ({timezone.now().strftime("%Y-%m-%d")}).xlsx"'
+
+            return response
+    raise Http404
 
 
 @login_required()
@@ -960,3 +1211,293 @@ def export_acrdp_budget(request, pk):
             response['Content-Disposition'] = f'inline; filename="ACRDP Budget (Project ID {project.id}).xls"'
             return response
     raise Http404
+
+
+@login_required()
+def csrf_application(request, pk):
+    project = get_object_or_404(models.Project, pk=pk)
+
+    # check if the project lead's profile is up-to-date
+    if not project.lead_staff.exists():
+        messages.error(request, _("Warning: There are no lead staff on this project!!"))
+    # else:
+    #     if not project.lead_staff.first().user.profile.tposition:
+    #         messages.error(request, _("Warning: project lead's profile information is missing in DM Apps (position title)"))
+    #     if not project.lead_staff.first().user.profile.phone:
+    #         messages.error(request, _("Warning: project lead's profile information is missing in DM Apps (phone number)"))
+    lang = get_language()
+    file_url = reports.generate_csrf_application(project, lang)
+
+    if os.path.exists(file_url):
+        with open(file_url, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="application/vnd.ms-word")
+            if lang == "fr":
+                filename = f'demande de FRSC (no. projet {project.id}).docx'
+            else:
+                filename = f'CSRF application (Project ID {project.id}).docx'
+
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+            return response
+    raise Http404
+
+
+@login_required()
+def sara_application(request, pk):
+    project = get_object_or_404(models.Project, pk=pk)
+
+    # check if the project lead's profile is up-to-date
+    if not project.lead_staff.exists():
+        messages.error(request, _("Warning: There are no lead staff on this project!!"))
+    lang = get_language()
+    file_url = reports.generate_sara_application(project, lang)
+
+    if os.path.exists(file_url):
+        with open(file_url, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="application/vnd.ms-word")
+            if lang == "fr":
+                filename = f'demande de SARA (no. projet {project.id}).docx'
+            else:
+                filename = f'SARA application (Project ID {project.id}).docx'
+
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+            return response
+    raise Http404
+
+
+@login_required()
+def export_csrf_submission_list(request):
+    year = request.GET.get("year")
+    region = request.GET.get("region")
+
+    file_url = reports.generate_csrf_submission_list(year, region)
+
+    if os.path.exists(file_url):
+        with open(file_url, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
+            response['Content-Disposition'] = f'inline; filename="CSRF Regional List of Submissions ({timezone.now().strftime("%Y-%m-%d")}).xls"'
+            return response
+    raise Http404
+
+
+@login_required()
+def project_status_summary(request):
+    year = request.GET.get("year") if "year" in request.GET else request.GET.get("fiscal_year")
+    region = request.GET.get("region")
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = reports.generate_project_status_summary(year, region)
+    response['Content-Disposition'] = f'attachment; filename="project status summary ({timezone.now().strftime("%Y_%m_%d")}).csv"'
+    return response
+
+
+@login_required()
+def export_project_list(request):
+    year = request.GET.get("year") if "year" in request.GET else request.GET.get("fiscal_year")
+    region = request.GET.get("region")
+    section = request.GET.get("section")
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = reports.generate_project_list(request.user, year, region, section)
+    response['Content-Disposition'] = f'attachment; filename="project list ({timezone.now().strftime("%Y_%m_%d")}).csv"'
+    return response
+
+
+@login_required()
+def export_sar_workplan(request):
+    year = request.GET.get("year") if "year" in request.GET else request.GET.get("fiscal_year")
+    region = request.GET.get("region")
+    region_name = None
+    # Create the HttpResponse object with the appropriate CSV header.
+    if region and region != "None":
+        region_name = shared_models.Region.objects.get(pk=region)
+
+    file_url = reports.generate_sar_workplan(year, region)
+
+    if os.path.exists(file_url):
+        with open(file_url, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
+            if region_name:
+                response['Content-Disposition'] = f'inline; filename="({year}) {region_name} - SAR Science workingplan.xls"'
+            else:
+                response['Content-Disposition'] = f'inline; filename="({year}) - SAR Science workingplan.xls"'
+
+            return response
+    raise Http404
+
+
+@login_required()
+def export_regional_staff_allocation(request):
+    year = request.GET.get("year") if "year" in request.GET else request.GET.get("fiscal_year")
+    region = request.GET.get("region")
+    # Create the HttpResponse object with the appropriate CSV header.
+    region_name = None
+    if region:
+        region_name = shared_models.Region.objects.get(pk=region)
+
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="{}_region_({}).csv"'.format(region_name, year)
+
+    writer = csv.writer(response)
+    writer.writerow(['Staff_Member', 'Fiscal_Year', 'Draft', 'Submitted_Unapproved', 'Approved'])
+
+    project_years = models.ProjectYear.objects.filter(fiscal_year_id=year,
+                                                      project__section__division__branch__region_id=region).values('pk')
+    users = User.objects.filter(staff_instances2__project_year_id__in=project_years).distinct().order_by("last_name")
+
+    for u in users:
+        my_dict = get_user_fte_breakdown(u, fiscal_year_id=year)
+        writer.writerow([my_dict["name"], my_dict["fiscal_year"], my_dict["draft"], my_dict["submitted_unapproved"],
+                         my_dict["approved"]])
+
+    return response
+
+
+@login_required()
+def export_project_position_allocation(request):
+    year = request.GET.get("year") if "year" in request.GET else request.GET.get("fiscal_year")
+    region = request.GET.get("region")
+    section = request.GET.get("section")
+
+    region_name = None
+    if region:
+        region_name = shared_models.Region.objects.get(pk=region)
+
+    section_name = None
+    if section:
+        section_name = shared_models.Section.objects.get(pk=section)
+
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(content_type='text/csv')
+    if section_name:
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.csv"'.format(year, region_name, section_name)
+    else:
+        response['Content-Disposition'] = 'attachment; filename="{}_{}.csv"'.format(year, region_name)
+
+    writer = csv.writer(response)
+    writer.writerow(['Project ID', 'Project Name', 'Project Lead', 'Staff Name', 'Staff Level', 'Funding Source'])
+
+    project_years = models.ProjectYear.objects.filter(fiscal_year_id=year,
+                                                      project__section__division__branch__region_id=region)
+    if section:
+        project_years = project_years.filter(project__section_id=section)
+
+    # Now filter down the projects to projects that have staff with staff levels, but no staff name.
+    for p in project_years:
+        staff = p.staff_set.filter(user__id=None)
+        if staff:
+            leads = ", ".join(l.smart_name for l in p.staff_set.filter(is_lead=True))
+            project = p.project
+            for s in staff:
+                # sometimes people enter a persons name
+                writer.writerow([project.pk, project.title, '"' + leads + '"', s.smart_name, s.level, s.funding_source])
+
+    return response
+
+
+@login_required()
+def export_capital_request_costs(request):
+    year = request.GET.get("year") if "year" in request.GET else request.GET.get("fiscal_year")
+    region = request.GET.get("region")
+    division = request.GET.get("division")
+    section = request.GET.get("section")
+
+    region_name = None
+    if region:
+        region_name = shared_models.Region.objects.get(pk=region)
+
+    division_name = None
+    if division and division != 'None':
+        division_name = shared_models.Division.objects.get(pk=division)
+
+    section_name = None
+    if section and section != 'None':
+        section_name = shared_models.Section.objects.get(pk=section)
+
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_capital_request_costs.csv"'.format(year, region_name)
+
+    writer = csv.writer(response)
+    writer.writerow(['Project ID', 'Project Name', 'Region', 'Division', 'Section', 'Theme', 'Capital Cost', 'Amount'])
+
+    project_years = models.ProjectYear.objects.filter(fiscal_year_id=year,
+                                                      project__section__division__branch__region_id=region)
+    if division and division != 'None':
+        project_years = project_years.filter(project__section__division_id=division)
+
+    if section and section != 'None':
+        project_years = project_years.filter(project__section_id=section)
+
+    # Now filter down the projects to projects that have staff with staff levels, but no staff name.
+    for p in project_years:
+        for cost in p.capitalcost_set.all():
+            proj = p.project
+            writer.writerow([proj.pk, proj.title, proj.section.division.branch.region, proj.section.division, proj.section, proj.functional_group, cost, cost.amount])
+
+    return response
+
+
+@login_required()
+def export_project_summary(request):
+
+    file_url = reports.export_project_summary(request)
+
+    if os.path.exists(file_url):
+        with open(file_url, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
+            year = request.GET.get('fiscal_year')
+            region_name = request.GET.get('region') if request.GET.get('region') != 'null'else None
+            if region_name:
+                response['Content-Disposition'] = f'inline; filename="({year}) {region_name} - Project Summary.xls"'
+            else:
+                response['Content-Disposition'] = f'inline; filename="({year}) - Project Summary.xls"'
+
+            return response
+    raise Http404
+
+
+# ADMIN USERS
+class UserListView(AdminRequiredMixin, CommonFilterView):
+    template_name = "projects2/user_list.html"
+    filterset_class = filters.UserFilter
+    home_url_name = "index"
+    paginate_by = 25
+    h1 = "Project Planning User Permissions"
+    field_list = [
+        {"name": 'first_name', "class": "", "width": ""},
+        {"name": 'last_name', "class": "", "width": ""},
+        {"name": 'email', "class": "", "width": ""},
+        {"name": 'last_login|{}'.format(gettext_lazy("Last login to DM Apps")), "class": "", "width": ""},
+    ]
+    new_object_url = reverse_lazy("shared_models:user_new")
+
+    def get_queryset(self):
+        queryset = User.objects.order_by("first_name", "last_name").annotate(
+            search_term=Concat('first_name', Value(""), 'last_name', Value(""), 'email', output_field=TextField())
+        )
+        if self.request.GET.get("projects"):
+            group = Group.objects.get(name="projects_admin")
+            queryset = queryset.filter(groups__in=[group.id]).distinct()
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["admin_group"] = Group.objects.get(name="projects_admin")
+        return context
+
+
+@login_required(login_url='/accounts/login/')
+@user_passes_test(in_projects_admin_group, login_url='/accounts/denied/')
+def toggle_user(request, pk, type):
+    if in_projects_admin_group(request.user):
+        my_user = User.objects.get(pk=pk)
+        admin_group = Group.objects.get(name="projects_admin")
+        if type == "admin":
+            # if the user is in the admin group, remove them
+            if admin_group in my_user.groups.all():
+                my_user.groups.remove(admin_group)
+            # otherwise add them
+            else:
+                my_user.groups.add(admin_group)
+        return HttpResponseRedirect("{}#user_{}".format(request.META.get('HTTP_REFERER'), my_user.id))
+    else:
+        return HttpResponseForbidden("sorry, not authorized")

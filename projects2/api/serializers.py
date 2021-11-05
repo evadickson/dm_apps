@@ -1,9 +1,12 @@
 from django.contrib.auth.models import User
-from django.template.defaultfilters import date
+from django.contrib.humanize.templatetags.humanize import naturaltime
+from django.template.defaultfilters import date, slugify
+from django.urls import reverse
 from markdown import markdown
 from rest_framework import serializers
 
 from lib.functions.custom_functions import listrify
+from lib.templatetags.custom_filters import nz
 from shared_models import models as shared_models
 from .. import models
 from ..utils import can_modify_project, in_projects_admin_group, is_management, is_rds
@@ -35,10 +38,38 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     metadata = serializers.SerializerMethodField()
     general_comment_html = serializers.SerializerMethodField()
-    notification_email_sent = serializers.SerializerMethodField()
+    approval_notification_email_sent = serializers.SerializerMethodField()
+    review_notification_email_sent = serializers.SerializerMethodField()
+    collaboration_score_html = serializers.SerializerMethodField()
+    strategic_score_html = serializers.SerializerMethodField()
+    operational_score_html = serializers.SerializerMethodField()
+    ecological_score_html = serializers.SerializerMethodField()
+    scale_score_html = serializers.SerializerMethodField()
+    approval_level_display = serializers.SerializerMethodField()
 
-    def get_notification_email_sent(self, instance):
-        return date(instance.notification_email_sent)
+    def get_approval_level_display(self, instance):
+        return instance.get_approval_level_display()
+
+    def get_scale_score_html(self, instance):
+        return instance.scale_score_html
+
+    def get_ecological_score_html(self, instance):
+        return instance.ecological_score_html
+
+    def get_operational_score_html(self, instance):
+        return instance.operational_score_html
+
+    def get_strategic_score_html(self, instance):
+        return instance.strategic_score_html
+
+    def get_collaboration_score_html(self, instance):
+        return instance.collaboration_score_html
+
+    def get_approval_notification_email_sent(self, instance):
+        return date(instance.approval_notification_email_sent)
+
+    def get_review_notification_email_sent(self, instance):
+        return date(instance.review_notification_email_sent)
 
     def get_metadata(self, instance):
         return instance.metadata
@@ -56,12 +87,21 @@ class ProjectYearSerializerLITE(serializers.ModelSerializer):
             "project",
             "display_name",
             "submitted",
-            "formatted_status",
+            "status_class",
+            "status_display",
         ]
 
     display_name = serializers.SerializerMethodField()
     submitted = serializers.SerializerMethodField()
-    formatted_status = serializers.SerializerMethodField()
+
+    status_display = serializers.SerializerMethodField()
+    status_class = serializers.SerializerMethodField()
+
+    def get_status_class(self, instance):
+        return slugify(instance.get_status_display())
+
+    def get_status_display(self, instance):
+        return instance.get_status_display()
 
     def get_display_name(self, instance):
         return str(instance.fiscal_year)
@@ -69,9 +109,6 @@ class ProjectYearSerializerLITE(serializers.ModelSerializer):
     def get_submitted(self, instance):
         if instance.submitted:
             return instance.submitted.strftime("%Y-%m-%d")
-
-    def get_formatted_status(self, instance):
-        return instance.formatted_status
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -90,7 +127,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         return instance.has_unsubmitted_years
 
     def get_lead_staff(self, instance):
-        return listrify([str(s) for s in instance.lead_staff.all()])
+        return listrify([str(nz(s)) for s in instance.lead_staff.all()])
 
 
 class ProjectYearSerializer(serializers.ModelSerializer):
@@ -103,6 +140,7 @@ class ProjectYearSerializer(serializers.ModelSerializer):
     display_name = serializers.SerializerMethodField()
     dates = serializers.SerializerMethodField()
     metadata = serializers.SerializerMethodField()
+    last_modified = serializers.SerializerMethodField()
     can_modify = serializers.SerializerMethodField()
     submitted = serializers.SerializerMethodField()
 
@@ -125,6 +163,26 @@ class ProjectYearSerializer(serializers.ModelSerializer):
     allocated_budget = serializers.SerializerMethodField()
     review_score_percentage = serializers.SerializerMethodField()
     review_score_fraction = serializers.SerializerMethodField()
+    status_display = serializers.SerializerMethodField()
+    status_class = serializers.SerializerMethodField()
+    om_costs = serializers.SerializerMethodField()
+    salary_costs = serializers.SerializerMethodField()
+    capital_costs = serializers.SerializerMethodField()
+
+    def get_capital_costs(self, instance):
+        return instance.capital_costs
+
+    def get_salary_costs(self, instance):
+        return instance.salary_costs
+
+    def get_om_costs(self, instance):
+        return instance.om_costs
+
+    def get_status_class(self, instance):
+        return slugify(instance.get_status_display())
+
+    def get_status_display(self, instance):
+        return instance.get_status_display()
 
     def get_review_score_percentage(self, instance):
         return instance.review_score_percentage
@@ -143,6 +201,16 @@ class ProjectYearSerializer(serializers.ModelSerializer):
 
     def get_metadata(self, instance):
         return instance.metadata
+
+    def get_last_modified(self, instance):
+        # format_str = '%Y-%m-%d %Z'
+        my_str = ""
+        if instance.updated_at:
+
+            my_str += f"{naturaltime(instance.updated_at)}"
+            if instance.modified_by:
+                my_str += f" by {instance.modified_by}"
+        return my_str
 
     def get_deliverables_html(self, instance):
         return instance.deliverables_html
@@ -245,12 +313,16 @@ class OMCostSerializer(serializers.ModelSerializer):
     om_category_display = serializers.SerializerMethodField()
     project_year_id = serializers.SerializerMethodField()
     category_type = serializers.SerializerMethodField()
+    project_id = serializers.SerializerMethodField()
+
+    def get_project_id(self, instance):
+        return instance.project_year.project_id
 
     def get_funding_source_display(self, instance):
         return str(instance.funding_source)
 
     def get_om_category_display(self, instance):
-        return str(instance.om_category)
+        return instance.om_category.tname
 
     def get_project_year_id(self, instance):
         return instance.project_year_id
@@ -299,7 +371,7 @@ class ActivitySerializer(serializers.ModelSerializer):
 
     def get_latest_update(self, instance):
         if instance.latest_update:
-            return f"{instance.latest_update.get_status_display()} <br>(from {instance.latest_update.status_report})"
+            return f'<a target="_blank" href="{reverse("projects2:report_detail", args=[instance.latest_update.status_report.id])}">{instance.latest_update.get_status_display()}</a>'
         return "n/a"
 
     def get_target_date_display(self, instance):
@@ -310,41 +382,37 @@ class ActivitySerializer(serializers.ModelSerializer):
         return instance.project_year_id
 
 
-class CollaboratorSerializer(serializers.ModelSerializer):
+class CollaborationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Collaborator
+        model = models.Collaboration
         exclude = ["project_year"]
 
     project_year_id = serializers.SerializerMethodField()
-
-    def get_project_year_id(self, instance):
-        return instance.project_year_id
-
-
-class GCCostSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.GCCost
-        exclude = ["project_year"]
-
-    project_year_id = serializers.SerializerMethodField()
-
-    def get_project_year_id(self, instance):
-        return instance.project_year_id
-
-
-class AgreementSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.CollaborativeAgreement
-        exclude = ["project_year"]
-
     new_or_existing_display = serializers.SerializerMethodField()
-    project_year_id = serializers.SerializerMethodField()
+    type_display = serializers.SerializerMethodField()
+
+    def get_type_display(self, instance):
+        return instance.get_type_display()
 
     def get_new_or_existing_display(self, instance):
         return instance.get_new_or_existing_display()
 
     def get_project_year_id(self, instance):
         return instance.project_year_id
+
+
+#
+# class GCCostSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = models.GCCost
+#         exclude = ["project_year"]
+#
+#     project_year_id = serializers.SerializerMethodField()
+#
+#     def get_project_year_id(self, instance):
+#         return instance.project_year_id
+#
+#
 
 
 class StatusReportSerializer(serializers.ModelSerializer):
@@ -389,6 +457,7 @@ class ActivityUpdateSerializer(serializers.ModelSerializer):
     activity = serializers.StringRelatedField()
     status_display = serializers.SerializerMethodField()
     notes_html = serializers.SerializerMethodField()
+    metadata = serializers.SerializerMethodField()
 
     class Meta:
         model = models.ActivityUpdate
@@ -399,6 +468,9 @@ class ActivityUpdateSerializer(serializers.ModelSerializer):
 
     def get_notes_html(self, instance):
         return instance.notes_html
+
+    def get_metadata(self, instance):
+        return instance.metadata
 
 
 class FileSerializer(serializers.ModelSerializer):
@@ -492,3 +564,40 @@ class SectionSerializer(serializers.ModelSerializer):
 
     def get_full_name(self, instance):
         return instance.full_name
+
+
+class CitationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = shared_models.Citation
+        fields = "__all__"
+
+    short_citation_html = serializers.SerializerMethodField()
+    citation_br = serializers.SerializerMethodField()
+    turl = serializers.SerializerMethodField()
+    tname = serializers.SerializerMethodField()
+    tabstract = serializers.SerializerMethodField()
+    project_count = serializers.SerializerMethodField()
+
+    def get_project_count(self, instance):
+        return instance.projects.count()
+
+    def get_tabstract(self, instance):
+        return instance.tabstract
+
+    def get_tname(self, instance):
+        return instance.tname
+
+    def get_turl(self, instance):
+        return instance.turl
+
+    def get_citation_br(self, instance):
+        return instance.citation_br
+
+    def get_short_citation_html(self, instance):
+        return instance.short_citation_html
+
+
+class PublicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = shared_models.Publication
+        fields = "__all__"

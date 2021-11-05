@@ -4,6 +4,7 @@ from django.test import tag
 from shared_models.views import CommonCreateView
 from whalebrary import views
 from whalebrary.test import FactoryFloor
+from whalebrary.test.FactoryFloor import ItemFactory
 from whalebrary.test.common_tests import CommonWhalebraryTest as CommonTest
 
 # Example how to run with keyword tags
@@ -140,7 +141,6 @@ class TestPersonnelCreateView(CommonTest):
         self.assert_success_url(self.test_url, data=data, user=self.user)
 
 
-#TODO find out about error - because supplier doesn't have to have an item?
 class TestSupplierCreateView(CommonTest):
     def setUp(self):
         super().setUp()
@@ -150,6 +150,7 @@ class TestSupplierCreateView(CommonTest):
         self.expected_template = 'whalebrary/form.html'
         self.expected_template2 = 'shared_models/generic_popout_form.html'
         self.user = self.get_and_login_user(in_group="whalebrary_admin")
+        ItemFactory(item_name="test")
 
     @tag("Supplier", "supplier_new", "view")
     def test_view_class(self):
@@ -217,7 +218,36 @@ class TestIncidentCreateView(CommonTest):
         data = FactoryFloor.IncidentFactory.get_valid_data()
         self.assert_success_url(self.test_url, data=data, user=self.user)
 
-#TODO same fail as file create view (related to file_field_name="image") -- need to add ImageField case to assert_success_url?
+
+class TestResightCreateView(CommonTest):
+    def setUp(self):
+        super().setUp()
+        self.instance = FactoryFloor.ResightFactory()
+        self.test_url = reverse_lazy('whalebrary:resight_new', args=[self.instance.pk, ])
+        self.expected_template = 'whalebrary/form.html'
+        self.user = self.get_and_login_user(in_group="whalebrary_edit")
+
+    @tag("Resight", "resight_new", "view")
+    def test_view_class(self):
+        self.assert_inheritance(views.ResightCreateView, CommonCreateView)
+        self.assert_inheritance(views.ResightCreateView, views.WhalebraryEditRequiredMixin)
+
+    @tag("Resight", "resight_new", "access")
+    def test_view(self):
+        self.assert_good_response(self.test_url)
+        self.assert_non_public_view(test_url=self.test_url, expected_template=self.expected_template, user=self.user)
+
+    @tag("Resight", "resight_new", "submit")
+    def test_submit(self):
+        data = FactoryFloor.ResightFactory.get_valid_data()
+        self.assert_success_url(self.test_url, data=data, user=self.user)
+
+    @tag("Resight", "resight_new", "correct_url")
+    def test_correct_url(self):
+        # use the 'en' locale prefix to url
+        self.assert_correct_url("whalebrary:resight_new", f"/en/whalebrary/resight/{self.instance.pk}/new/", [self.instance.pk])
+
+
 class TestImageCreateView(CommonTest):
     def setUp(self):
         super().setUp()

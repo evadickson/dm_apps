@@ -32,6 +32,22 @@
           <th style="width: 100px" v-if="showColumnScore">
             {% trans "Review score" %}
           </th>
+        {% elif "last_modified" in field %}
+          <th style="width: 100px" v-if="showColumnLastModified">
+            {% trans "Last Modified" %}
+          </th>
+        {% elif field == 'om_costs' %}
+          <th style="width: 100px" v-if="showColumnOM" @click="sort('{{ field }}')" class="clickable">
+            {% trans "O&M Costs" %}
+          </th>
+        {% elif "salary" in field %}
+          <th style="width: 100px" v-if="showColumnSalary" @click="sort('{{ field }}')" class="clickable">
+            {% trans "Salary Costs" %}
+          </th>
+        {% elif "capital" in field %}
+          <th style="width: 100px" v-if="showColumnCapital" @click="sort('{{ field }}')" class="clickable">
+            {% trans "Capital Costs" %}
+          </th>
         {% elif "lead" in field %}
           <th @click="sort('{{ field }}')" v-if="showColumnLeads" style="width: 150px" class="clickable">
             {% get_verbose_label random_project field %}
@@ -58,11 +74,16 @@
     >
       <td>${p.project.id}</td>
       <td>${p.display_name}</td>
-      <td>${p.project.title}</td>
+      <td>
+        <a class="text-primary pointy" @click="goProjectDetail(p)">
+          ${p.project.title}
+        </a>
+      </td>
+
       <td>${p.project.default_funding_source}</td>
       <td>${p.project.functional_group}</td>
       <td v-if="showColumnLeads">${p.project.lead_staff}</td>
-      <td v-html="p.formatted_status"></td>
+      <td :class="p.status_class" v-html="p.status_display"></td>
 
       <td v-if="showColumnAllocation">
         <span v-if="p.review">${p.review.allocated_budget | nz(0) | currencyFormat | zero2NullMark}</span>
@@ -74,11 +95,23 @@
         <span v-else>---</span>
       </td>
 
+      <td v-if="showColumnLastModified">
+        <span v-if="p.last_modified">${p.last_modified}</span>
+        <span v-else>---</span>
+      </td>
+      <td v-if="showColumnOM">
+        <span>${p.om_costs|currencyFormat}</span>
+      </td>
+      <td v-if="showColumnSalary">
+        <span>${p.salary_costs|currencyFormat}</span>
+      </td>
+      <td v-if="showColumnCapital">
+        <span>${p.capital_costs|currencyFormat}</span>
+      </td>
       <td v-if="isAdminOrMgmt && showColumnHidden">
         <span v-if="p.project.is_hidden" class="highlight">{% trans "Yes" %}</span>
         <span v-else>{% trans "No" %}</span>
       </td>
-
       {#  Button zone!!! #}
 
       {% echo "small-btn-text btn btn-sm" as btn_class %}
@@ -93,11 +126,11 @@
       </td>
 
       <td class="w90">
-        <button v-if="p.submitted && p.status != 4 && p.review && p.review.id" @click="openReviewModal(p)"
+        <button v-if="p.status != 4 && p.review && p.review.id" @click="openReviewModal(p)"
                 class="px-1 {{ btn_class }} btn-warning">
           {% trans "Edit review" %}
         </button>
-        <button v-else-if="p.submitted && p.status != 4" @click="openReviewModal(p)" class="px-1 {{ btn_class }} btn-info">
+        <button v-else-if="p.status != 4" @click="openReviewModal(p)" class="px-1 {{ btn_class }} btn-info">
           {% trans "Start review" %}
         </button>
       </td>
@@ -109,11 +142,6 @@
         </button>
       </td>
 
-      <td class="">
-        <button @click="goProjectDetail(p)" class="{{ btn_class }} btn-outline-primary">
-          <span class="mdi mdi-arrow-top-right text-primary"></span>
-        </button>
-      </td>
 
     </tr>
     </tbody>

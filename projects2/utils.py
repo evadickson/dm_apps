@@ -117,7 +117,7 @@ def can_modify_project(user, project_id, return_as_dict=False):
             my_dict["can_modify"] = True
 
         # check to see if they are a project lead
-        elif not project.lead_staff.exists():
+        elif not models.Staff.objects.filter(project_year__project=project, is_lead=True).exists():
             my_dict["reason"] = "You can modify this record because there are currently no project leads"
             my_dict["can_modify"] = True
 
@@ -269,35 +269,35 @@ def financial_project_year_summary_data(project_year):
 
 def financial_project_summary_data(project):
     my_list = []
+    if project.get_funding_sources():
+        for fs in project.get_funding_sources():
+            my_dict = dict()
+            my_dict["type"] = fs.get_funding_source_type_display()
+            my_dict["name"] = str(fs)
+            my_dict["salary"] = 0
+            my_dict["om"] = 0
+            my_dict["capital"] = 0
 
-    for fs in project.get_funding_sources():
-        my_dict = dict()
-        my_dict["type"] = fs.get_funding_source_type_display()
-        my_dict["name"] = str(fs)
-        my_dict["salary"] = 0
-        my_dict["om"] = 0
-        my_dict["capital"] = 0
+            # first calc for staff
+            for staff in models.Staff.objects.filter(funding_source=fs, project_year__project=project):
+                # exclude any employees that should be excluded. This is a fail safe since the form should prevent data entry
+                if not staff.employee_type.exclude_from_rollup:
+                    if staff.employee_type.cost_type == 1:
+                        my_dict["salary"] += nz(staff.amount, 0)
+                    elif staff.employee_type.cost_type == 2:
+                        my_dict["om"] += nz(staff.amount, 0)
 
-        # first calc for staff
-        for staff in models.Staff.objects.filter(funding_source=fs, project_year__project=project):
-            # exclude any employees that should be excluded. This is a fail safe since the form should prevent data entry
-            if not staff.employee_type.exclude_from_rollup:
-                if staff.employee_type.cost_type == 1:
-                    my_dict["salary"] += nz(staff.amount, 0)
-                elif staff.employee_type.cost_type == 2:
-                    my_dict["om"] += nz(staff.amount, 0)
+            # O&M costs
+            for cost in models.OMCost.objects.filter(funding_source=fs, project_year__project=project):
+                my_dict["om"] += nz(cost.amount, 0)
 
-        # O&M costs
-        for cost in models.OMCost.objects.filter(funding_source=fs, project_year__project=project):
-            my_dict["om"] += nz(cost.amount, 0)
+            # Capital costs
+            for cost in models.CapitalCost.objects.filter(funding_source=fs, project_year__project=project):
+                my_dict["capital"] += nz(cost.amount, 0)
 
-        # Capital costs
-        for cost in models.CapitalCost.objects.filter(funding_source=fs, project_year__project=project):
-            my_dict["capital"] += nz(cost.amount, 0)
+            my_dict["total"] = my_dict["salary"] + my_dict["om"] + my_dict["capital"]
 
-        my_dict["total"] = my_dict["salary"] + my_dict["om"] + my_dict["capital"]
-
-        my_list.append(my_dict)
+            my_list.append(my_dict)
 
     return my_list
 
@@ -346,14 +346,18 @@ def multiple_financial_project_year_summary_data(project_years):
 
 def get_project_field_list(project):
     is_acrdp = project.is_acrdp
+    is_csrf = project.is_csrf
+    is_sara = project.is_sara
+    general_project = not is_csrf and not is_acrdp and not is_sara
 
     my_list = [
         'id',
         'section',
         # 'title',
-        'overview' if not is_acrdp else 'overview|{}'.format(gettext_lazy("Project overview / ACRDP objectives")),
+        'overview' if general_project else None,
         # do not call the html field directly or we loose the ability to get the model's verbose name
         'activity_type',
+        'functional_group.theme|{}'.format(_("theme")),
         'functional_group',
         'default_funding_source',
         'start_date',
@@ -363,13 +367,31 @@ def get_project_field_list(project):
         'lead_staff',
 
         # acrdp fields
+        'overview|{}'.format(gettext_lazy("Project overview / ACRDP objectives")) if is_acrdp else None,
         'organization' if is_acrdp else None,
         'species_involved' if is_acrdp else None,
-        'team_description' if is_acrdp else None,
-        'rationale' if is_acrdp else None,
-        'experimental_protocol' if is_acrdp else None,
+        'team_description_html|{}'.format(_("description of team and required qualifications (ACRDP)")) if is_acrdp else None,
+        'rationale_html|{}'.format(_("project problem / rationale (ACRDP)")) if is_acrdp else None,
+        'experimental_protocol_html|{}'.format(_("experimental protocol (ACRDP)")) if is_acrdp else None,
+
+        # csrf fields
+        'overview' if is_csrf else None,
+        'csrf_theme|{}'.format(_("CSRF theme")) if is_csrf else None,
+        'csrf_sub_theme|{}'.format(_("CSRF sub-theme")) if is_csrf else None,
+        'csrf_priority|{}'.format(_("CSRF priority")) if is_csrf else None,
+        'client_information_html|{}'.format(_("Additional info supplied by client")) if is_csrf else None,
+        'second_priority' if is_csrf else None,
+        'objectives_html|{}'.format(_("project objectives (CSRF)")) if is_csrf else None,
+        'innovation_html|{}'.format(_("innovation (CSRF)")) if is_csrf else None,
+        'other_funding_html|{}'.format(_("other sources of funding (CSRF)")) if is_csrf else None,
+
+        # sara fields
+        'overview|{}'.format(_("Objectives and methods")) if is_sara else None,
+        'reporting_mechanism' if is_sara else None,
+        'future_funding_needs' if is_sara else None,
 
         'tags',
+        'references',
         'metadata|{}'.format(_("metadata")),
     ]
     while None in my_list: my_list.remove(None)
@@ -384,13 +406,13 @@ def get_project_year_field_list(project_year=None):
 
         # SPECIALIZED EQUIPMENT COMPONENT
         #################################
-        'requires_specialized_equipment',
+        'requires_specialized_equipment|{}'.format(_("requires specialized equipment?")),
         'technical_service_needs' if not project_year or project_year.requires_specialized_equipment else None,
         'mobilization_needs' if not project_year or project_year.requires_specialized_equipment else None,
 
         # FIELD COMPONENT
         #################
-        'has_field_component',
+        'has_field_component|{}'.format(_("has field component?")),
         'vehicle_needs' if not project_year or project_year.has_field_component else None,
         'ship_needs' if not project_year or project_year.has_field_component else None,
         'coip_reference_id' if not project_year or project_year.has_field_component else None,
@@ -416,19 +438,36 @@ def get_project_year_field_list(project_year=None):
         'requires_other_lab_support' if not project_year or project_year.has_lab_component else None,
         'other_lab_support_needs' if not project_year or project_year.has_lab_component else None,
 
-        'it_needs',
+        'it_needs|{}'.format(_("special IT requirements")),
         'additional_notes',
         'coding',
         'submitted',
         'formatted_status|{}'.format(_("status")),
-        'allocated_budget|{}'.format(_("allocated budget")),
-        'review_score|{}'.format(_("review score")),
+        # 'allocated_budget|{}'.format(_("allocated budget")),
+        # 'review_score|{}'.format(_("review score")),
         'metadata|{}'.format(_("metadata")),
     ]
 
     # remove any instances of None
     while None in my_list: my_list.remove(None)
 
+    return my_list
+
+
+def get_review_field_list():
+    my_list = [
+        'collaboration_score_html|{}'.format("external pressures score"),
+        'strategic_score_html|{}'.format("strategic direction score"),
+        'operational_score_html|{}'.format("operational considerations score"),
+        'ecological_score_html|{}'.format("ecological impact score"),
+        'scale_score_html|{}'.format("scale score"),
+        'total_score',
+        'comments_for_staff',
+        'approval_level',
+        'approver_comment',
+        'allocated_budget',
+        'metadata',
+    ]
     return my_list
 
 
@@ -440,10 +479,25 @@ def get_staff_field_list():
         'employee_type',
         'level',
         'duration_weeks',
-        'overtime_hours',
+        # 'overtime_hours',
         # 'overtime_description',
-        'student_program',
+        # 'student_program',
         'amount',
+    ]
+    return my_list
+
+
+def get_citation_field_list():
+    my_list = [
+        'tname|{}'.format(_("title")),
+        'authors',
+        'year',
+        'publication',
+        'pub_number',
+        # 'turl|{}'.format(_("url")),
+        'tabstract|{}'.format(_("abstract")),
+        'series',
+        'region',
     ]
     return my_list
 
@@ -481,32 +535,16 @@ def get_activity_field_list():
     return my_list
 
 
-def get_collaborator_field_list():
+def get_collaboration_field_list():
     my_list = [
-        'name',
-        'critical',
-        'notes',
-    ]
-    return my_list
-
-
-def get_gc_cost_field_list():
-    my_list = [
-        'recipient_org',
-        'project_lead',
-        'proposed_title',
-        'gc_program',
-        'amount',
-    ]
-    return my_list
-
-
-def get_agreement_field_list():
-    my_list = [
-        'partner_organization',
-        'project_lead',
-        'agreement_title',
+        'type',
         'new_or_existing',
+        'organization',
+        'people',
+        'critical',
+        'agreement_title',
+        # 'gc_program',
+        # 'amount',
         'notes',
     ]
     return my_list
@@ -533,6 +571,7 @@ def get_activity_update_field_list():
         'activity',
         'status',
         'notes_html|{}'.format("notes"),
+        'metadata|{}'.format("meta"),
     ]
     return my_list
 

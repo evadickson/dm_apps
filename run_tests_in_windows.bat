@@ -27,3 +27,21 @@ python manage.py test -b cruises.test --keepdb
 
 :: run tests for whalebrary
 python manage.py test -b whalebrary.test --keepdb
+
+:: run tests for bio_diversity
+python manage.py test --exclude-tag=Functional -b bio_diversity.test --keepdb
+
+:: run tests for scuba
+python manage.py test -b scuba.test --keepdb
+
+:: run tests for publications
+python manage.py test -b publications.test --keepdb
+
+:: run tests for edna
+python manage.py test -b edna.test --keepdb
+
+:: run tests for fisheriescape
+python manage.py test -b fisheriescape.test --keepdb
+
+:: run tests for grais
+python manage.py test -b grais.test --keepdb

@@ -1,7 +1,34 @@
 from django import forms
 from whalesdb import models
+from django.forms import modelformset_factory
+from django.utils.translation import gettext_lazy as _
 
 import shared_models.models as shared_models
+import inspect
+
+
+class ReportSearchForm(forms.Form):
+    REPORT_CHOICES = (
+        (None, "------"),
+        (1, "Deployment Summary Report (csv)"),
+    )
+    report = forms.ChoiceField(required=True, choices=REPORT_CHOICES)
+    start_date = forms.DateField(required=False)
+    end_date = forms.DateField(required=False)
+    station = forms.MultipleChoiceField(required=False, label=_("Station (Leave blank to select all, shift/ctrl to control selection)"))
+    project = forms.MultipleChoiceField(required=False, label=_("Project (Leave blank to select all, shift/ctrl to control selection)"))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        STN_CHOICES = [(y.pk, str(y),) for idx, y in enumerate(models.StnStation.objects.all().order_by("stn_name"))]
+
+        PRJ_CHOICES = [(y.pk, str(y),) for idx, y in enumerate(models.PrjProject.objects.all().order_by("name"))]
+
+        self.fields['start_date'].widget = forms.DateInput(attrs={"placeholder": "Click to select a date..", "class": "fp-date"})
+        self.fields['end_date'].widget = forms.DateInput(attrs={"placeholder": "Click to select a date..", "class": "fp-date"})
+        self.fields['station'].choices = STN_CHOICES
+        self.fields['project'].choices = PRJ_CHOICES
 
 
 class CruForm(forms.ModelForm):
@@ -95,7 +122,27 @@ class EmmForm(forms.ModelForm):
         }
 
 
+class EheManagedForm(forms.ModelForm):
+
+    init_rec = None
+
+    class Meta:
+        model = models.EheHydrophoneEvent
+        exclude = []
+        widgets = {
+            'ehe_date': forms.DateInput(attrs={"placeholder": "Click to select a date..", "class": "fp-date"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['hyd'].queryset = self.fields['hyd'].queryset.filter(emm__eqt=4)
+        self.fields['rec'].queryset = self.fields['rec'].queryset.exclude(emm__eqt=4)
+
+
 class EheForm(forms.ModelForm):
+
+    copy_to_channel = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, required=False)
 
     class Meta:
         model = models.EheHydrophoneEvent
@@ -108,6 +155,14 @@ class EheForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        if 'rec' in self.initial and self.initial['rec']:
+            eqp = models.EqpEquipment.objects.get(pk=self.initial['rec'])
+            emm = eqp.emm
+            if hasattr(emm, 'recorder'):
+                channel_choices = [(c.ecp_channel_no, c.ecp_channel_no) for c in
+                                   emm.recorder.channels.exclude(ecp_channel_no=self.initial['ecp_channel_no'])]
+                self.fields['copy_to_channel'].choices = channel_choices
 
         if 'hyd' in self.initial and self.initial['hyd']:
             self.fields['hyd'].widget = forms.HiddenInput()
@@ -171,6 +226,12 @@ class EtrForm(forms.ModelForm):
             'etr_date': forms.DateInput(attrs={"placeholder": "Click to select a date..", "class": "fp-date"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Only hydrophones from the equipment selection list
+        self.fields['hyd'].queryset = self.fields['hyd'].queryset.filter(emm__eqt=4)
+
 
 class MorForm(forms.ModelForm):
 
@@ -191,11 +252,16 @@ class PrjForm(forms.ModelForm):
 
     class Meta:
         model = models.PrjProject
-        fields = ["name", "nom", "description_en", "description_fr", "prj_url"]
+        fields = ["name", "description_en", "lead", "prj_url"]
         widgets = {
             'description_en': forms.Textarea(attrs={"rows": 2}),
-            'description_fr': forms.Textarea(attrs={"rows": 2}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['name'].label = _("Project Name")
+        self.fields['description_en'].label = _("Description")
 
 
 class RciForm(forms.ModelForm):
@@ -294,3 +360,46 @@ class TeaForm(forms.ModelForm):
         exclude = []
         widgets = {
         }
+
+
+class LookupForm(forms.ModelForm):
+    class Meta:
+        fields = ['name', 'nom', 'description_en', 'description_fr']
+
+
+EheFormset = modelformset_factory(model=models.EheHydrophoneEvent, form=EheManagedForm, extra=1)
+EqtFormset = modelformset_factory(model=models.EqtEquipmentTypeCode, form=LookupForm, extra=1, )
+ErtFormset = modelformset_factory(model=models.ErtRecorderType, form=LookupForm, extra=1, )
+PrmFormset = modelformset_factory(model=models.PrmParameterCode, form=LookupForm, extra=1, )
+RttFormset = modelformset_factory(model=models.RttTimezoneCode, form=RttForm, extra=1, )
+SetFormset = modelformset_factory(model=models.SetStationEventCode, form=LookupForm, extra=1, )
+
+
+MODEL_CHOICES = (("1", "One"), ("2", "Two"))
+
+
+class HelpTextForm(forms.ModelForm):
+
+    model = None
+
+    class Meta:
+        fields = "__all__"
+        widgets = {
+            'eng_text': forms.Textarea(attrs={"rows": 2}),
+            'fra_text': forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        clsmembers = [(cls[0], cls[0]) for cls in inspect.getmembers(models, inspect.isclass)]
+        clsmembers.insert(0, (None, "----"))
+
+        self.fields['model'] = forms.ChoiceField(choices=clsmembers)
+
+
+HelpTextFormset = modelformset_factory(
+    model=models.HelpText,
+    form=HelpTextForm,
+    extra=1,
+)

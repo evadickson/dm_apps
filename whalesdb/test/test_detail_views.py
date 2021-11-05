@@ -5,6 +5,8 @@ from whalesdb.test.common_views import CommonDetailsTest
 from whalesdb.test import WhalesdbFactoryFloor as Factory
 from shared_models.test import SharedModelsFactoryFloor as SharedFactory
 
+from whalesdb import models
+
 
 @tag('cru', 'detail')
 class TestCruDetails(CommonDetailsTest, TestCase):
@@ -68,9 +70,8 @@ class TestDepDetails(CommonDetailsTest, TestCase):
         self.assertEqual(response.context["object"], self.createDict()['dep_1'])
         super().assert_field_in_fields(response)
 
-        # Test that the context contains the proper fields
-
-        # If there is a Dataset associated with the deployment it should be passed as a context variable to the
+    # Test that the context contains the proper fields
+    # If there is a Dataset associated with the deployment it should be passed as a context variable to the
     # Deployment details page so it can be linked to.
     def test_context_fields_dep_w_rec(self):
         rec = Factory.RecFactory()
@@ -89,8 +90,11 @@ class TestEcaDetails(CommonDetailsTest, TestCase):
 
     def setUp(self):
         super().setUp()
+        eqt = models.EqtEquipmentTypeCode.objects.get(pk=4)
+        emm = Factory.EmmFactory(eqt=eqt)
+        eca_hydrophone = Factory.EqpFactory(emm=emm)
 
-        self.eca = Factory.EcaFactory()
+        self.eca = Factory.EcaFactory(eca_hydrophone=eca_hydrophone)
 
         self.test_url = reverse_lazy('whalesdb:details_eca', args=(self.eca.pk,))
         self.test_expected_template = 'whalesdb/details_eca.html'
@@ -153,7 +157,11 @@ class TestEtrDetails(CommonDetailsTest, TestCase):
     def setUp(self):
         super().setUp()
 
-        self.etr = Factory.EtrFactory()
+        eqt = models.EqtEquipmentTypeCode.objects.get(pk=4)
+        emm = Factory.EmmFactory(eqt=eqt)
+        eca_hydrophone = Factory.EqpFactory(emm=emm)
+
+        self.etr = Factory.EtrFactory(hyd=eca_hydrophone)
 
         self.test_url = reverse_lazy('whalesdb:details_etr', args=(self.etr.pk,))
         self.test_expected_template = 'whalesdb/whales_details.html'
@@ -229,7 +237,7 @@ class TestPrjDetails(CommonDetailsTest, TestCase):
         stn_dic = self.createDict()
 
         self.test_url = reverse_lazy('whalesdb:details_prj', args=(stn_dic['prj_1'].pk,))
-        self.test_expected_template = 'whalesdb/whales_details.html'
+        self.test_expected_template = 'whalesdb/details_prj.html'
 
     # Test that the context contains the proper fields
     def test_context_fields_prj(self):

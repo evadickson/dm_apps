@@ -26,9 +26,7 @@ RUN set -ex \
 
 # install python dependencies for project
 RUN python -m pip install --upgrade pip setuptools wheel \
-    && python -m pip install -r requirements.txt \
-    && python -m pip uninstall --yes django-easy-pdf \
-    && python -m pip install git+https://github.com/pawanvirsingh/django-easy-pdf.git#egg=django-easy-pdf
+    && python -m pip install -r requirements.txt
 
 # remove any unrequired dependencies
 RUN apt-get purge -y --auto-remove $buildDeps \
@@ -36,7 +34,7 @@ RUN apt-get purge -y --auto-remove $buildDeps \
 
 RUN mkdir media \
     && mkdir media/travel \
-    && mkdir media/travel/temp \
+    && mkdir media/temp \
     && mkdir media/inventory \
     && mkdir media/inventory/temp \
     && mkdir media/projects \
@@ -50,8 +48,8 @@ COPY . /opt/services/djangoapp/src
 
 EXPOSE 8000 2222
 
-COPY ./azure_scripts/init.sh /usr/local/bin/
+COPY Procfile.sh /usr/local/bin/
 	
-RUN chmod u+x /usr/local/bin/init.sh
+RUN chmod u+x /usr/local/bin/Procfile.sh
 
-ENTRYPOINT ["bash","init.sh"]
+ENTRYPOINT ["bash","Procfile.sh"]

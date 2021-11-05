@@ -8,14 +8,14 @@
 {% load el_pagination_tags %}
 
 {% block title_area %}
-  {{ block.super }}
-  <h3>
-    {% if view.kwargs.travel %}
-      Click <a href="{% url 'travel:user_list' %}">HERE</a> to show ALL users
+  <div class="float-right">
+    {% if view.request.GET.travel_only %}
+      <a href="{% url 'travel:user_list' %}" class="btn btn-dark">Show ALL users</a>
     {% else %}
-      Click <a href="{% url 'travel:user_list' 1 %}">HERE</a> to show only Admin & ADM Admin users
+      <a href="{% url 'travel:user_list' %}?travel_only=true" class="btn btn-dark">Show Regional & National coordinators Only</a>
     {% endif %}
-  </h3>
+  </div>
+  {{ block.super }}
 {% endblock %}
 
 {% block new_object_button %}
@@ -37,12 +37,14 @@
         </th>
       {% endfor %}
       <th class="text-center">
-        {% trans "Travel App Administrator" %}
+        {% trans "Regional Coordinators" %}
       </th>
       <th class="text-center">
-        {% trans "Travel App ADM Administrator" %}
+        {% trans "National Coordinator" %}
       </th>
-
+      <th class="text-center">
+        {% trans "CFO Read Only" %}
+      </th>
     {% endblock %}
     </thead>
 
@@ -56,6 +58,7 @@
 
         {% url 'travel:toggle_user' object.id "admin" as admin_url %}
         {% url 'travel:toggle_user' object.id "adm_admin" as adm_admin_url %}
+        {% url 'travel:toggle_user' object.id "cfo" as cfo_url %}
 
         {% for field in field_list %}
 
@@ -81,13 +84,16 @@
             <a class="btn btn-sm btn-danger" href="{{ adm_admin_url }}">No</a>
           {% endif %}
         </td>
+        <td class="text-center">
+          {% if cfo_group in object.groups.all %}
+            <a class="btn btn-sm btn-success" href="{{ cfo_url }}">Yes</a>
+          {% else %}
+            <a class="btn btn-sm btn-danger" href="{{ cfo_url }}">No</a>
+          {% endif %}
+        </td>
 
       </tr>
     {% endfor %}
     </tbody>
   </table>
 {% endblock %}
-
-
-
-

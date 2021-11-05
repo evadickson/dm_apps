@@ -123,6 +123,7 @@ def save_project_year_on_review_delete(sender, instance, **kwargs):
 @receiver(models.signals.post_save, sender=Review)
 def save_project_year_on_review_creation(sender, instance, created, **kwargs):
     py = instance.project_year
+
     # if the reviewer denied approval, project year status = denied
     if instance.approval_status == 0:
         py.status = 5
@@ -135,8 +136,17 @@ def save_project_year_on_review_creation(sender, instance, created, **kwargs):
         py.status = 4
 
     # finally, if the py status happens to be set to 2 (submitted) it should be updated to 3 (reviewed)
-    elif instance.project_year.status == 2:
+    elif py.status == 2:
         py.status = 3
+
+    # if the project was approved by accident, the approver might want to undo their approval...and roll back to reviewed
+    elif py.status == 4 and not instance.approval_status:
+        py.status = 3
+
+    # if the project was denied by accident, the approver might want to undo their denial...and roll back to reviewed
+    elif py.status == 5 and not instance.approval_status:
+        py.status = 3
+
     py.save()
 
 

@@ -2,144 +2,117 @@
 {% load static %}
 {% load bootstrap4 %}
 {% load verbose_names %}
-{% load i18n %}
 {% load custom_filters %}
 {% load custom_tags %}
-
-{% block area_above_h1 %}
-
-    {# if trip is cancelled, display a warning #}
-    {% if object.status.id == 43 %}
-        <div class="alert alert-danger" role="alert">
-            <h4 class="alert-heading">
-                {% trans "WARNING" %}
-            </h4>
-            <p>
-                {% trans "This trip and all associated requests have been cancelled." %}
-            </p>
-        </div>
-    {% endif %}
+{% load i18n %}
+{% load humanize %}
+{% load l10n %}
+{% block title_area %}
 {% endblock %}
 
+
 {% block subcontent %}
+  <div id="app" v-cloak>
+    <div class="mb-3 mt-3" v-if="trip">
+      <h2>${trip.display}</h2>
+    </div>
+    <div v-if="isNCRAdmin || (isRegionalAdmin && !trip.is_adm_approval_required)" class="alert alert-primary no-print py-2" role="alert" style="width: 60%">
+      <p class="mb-0">
+        <span class="h5 mdi mdi-information-outline mr-3"></span> <span class="h6">{% trans "You are viewing this trip as an admin user." %}</span>
+      </p>
+    </div>
 
-    {% crash_if_none "is_adm_admin" is_adm_admin %}
+    <div v-else-if="trip.is_adm_approval_required" class="alert alert-warning no-print py-2 w-75" role="alert">
+      <p class="mb-0">
+        <span class="h5 mdi mdi-pencil-off mr-3"></span> <span class="h6">
+        {% blocktrans %}
+          If you would like to make any modifications to this trip, please contact the <a href="mailto:DFO.ScienceTravel-VoyagesSciences.MPO@dfo-mpo.gc.ca?subject={{ object }}">NCR travel coordinator</a>.
+        {% endblocktrans %}
+        </span>
+      </p>
+    </div>
+    <div v-else class="alert alert-warning no-print py-2 w-75" role="alert">
+      <p class="mb-0">
+        <span class="h5 mdi mdi-pencil-off mr-3"></span> <span class="h6">
+        {% blocktrans %}
+          If you would like to make any modifications to this trip, please contact your regional travel administrator.
+        {% endblocktrans %}
+        </span>
+      </p>
+    </div>
 
-    <style>
-        .plainjane {
-            background-color: #f5efe6;
-            border: black solid 1px;
-        }
+    {# warnings #}
+    <div v-if="trip.id">
 
-        .admin_notes {
-            padding: 10px;
-            background-color: #efee7e;
-            font-weight: bold;
-        }
-    </style>
-
-    {% if is_adm_admin and object.is_adm_approval_required and object.status.id == 30 %} {# disabled for everyone #}
-        <div class="mb-3">
-            {# ADM Admin stuff #}
-            <h4 class="red-font">
-                {% trans "This trip must be verified before a review can be started." %}
-                <a class="btn btn-sm btn-primary py-0"
-                   href="{% url 'travel:trip_verify' object.id 0 1 %}">{% trans "Verify the Trip Now" %}</a>
-            </h4>
-        </div>
-    {% endif %}
-
-
+      <div v-if="isNCRAdmin && trip.is_adm_approval_required && trip.status === 30" class="alert alert-danger py-2" role="alert" style="width: 80%">
+        <p class="mb-0">
+          <span class="h5 mdi mdi-alert-decagram-outline mr-3"></span>
+          <span class="h6">{% trans "This trip must be verified before a review can be started." %}        </span>
+          <a class="btn btn-sm btn-primary py-0"
+             href="{% url 'travel:trip_verify' object.id %}">{% trans "Verify the Trip Now" %}</a>
+        </p>
+      </div>
+    </div>
 
     {# ADM Admin stuff #}
     <div class="btns mb-3">
-        {% if can_modify %}
-            <a class="btn btn-admin" href="#" pop-href="{% url 'travel:trip_admin_notes_edit' object.id %}">
-                {% trans "Administrative Notes" %}
-            </a>
-        {% endif %}
 
-        {# all admins can modify trip detail #}
-        {% if is_admin %}
-            <a class="btn btn-admin" href="{% url 'travel:trip_edit' object.id view.kwargs.type %}">
-                {% trans "Edit" %}
-            </a>
-        {% endif %}
+      {% include "travel/common/_trip_admin_notes_button.html" %}
 
-        {% if is_adm_admin %}
-            {% if object.status.id != 43 and object.is_adm_approval_required %}
+      {# all admins can modify trip detail #}
+      <a v-if="canModify" class="btn btn-admin" href="{% url 'travel:trip_edit' object.id %}{{ view.get_query_string }}">
+        {% trans "Edit" %}
+      </a>
+      <a v-if="canModify" class="btn btn-admin" href="{% url 'travel:trip_clone' object.id %}{{ view.get_query_string }}">
+        {% trans "Clone" %}
+      </a>
+      <a v-if="canModify && trip.status === 30" class="btn btn-admin" href="{% url 'travel:trip_verify' object.id %}{{ view.get_query_string }}">
+        {% trans "Verify" %}
+      </a>
 
-                {# Review BUTTON #}
-                {% if object.status.id != 32 %}
-                    {% if object.status.id == 30 %} {# disabled for everyone #}
-                        {% echo "disabled" as review_disabled_var %}
-                        {% trans "This trip must be verified before a review can be started." as review_tip_text %}
-                    {% endif %}
+      <a v-if="isNCRAdmin && trip.status !== 43 && trip.status !== 30 && trip.is_adm_approval_required"
+         class="btn btn-admin" v-if="trip.status !== 30"
+         href="{% url 'travel:trip_review_toggle' object.id %}">
+        <span v-if="trip.status === 32">{% trans "Re-open the review process (late submission)" %}</span>
+        <span v-else-if="trip.status === 41">{% trans "Start a Review for this trip" %}</span>
+        <span v-else>{% trans "Terminate the review process" %}</span>
+      </a>
 
-                    {% if object.status.id == 30 or object.status.id == 41 %}
-                        {% echo "success" as review_btn_color %}
-                        {% trans "Start a Review for this trip" as review_btn_text %}
-                    {% else %}
-                        {% echo "danger" as review_btn_color %}
-                        {% trans "Terminate the review process" as review_btn_text %}
-                    {% endif %}
-                {% else %}
-                        {% echo "warning" as review_btn_color %}
-                        {% trans "Re-open the review process (late submission)" as review_btn_text %}
-                {% endif %}
-
-                <span data-toggle="tooltip" title="{{ review_tip_text }}">
-                <a class="btn btn-{{ review_btn_color }} {{ review_disabled_var }}"
-                   href="{% url 'travel:trip_review_toggle' object.id %}">{{ review_btn_text }}</a>
-                </span>
-            {% endif %}
-        {% endif %}
-
-        {# cancel button - only show if has permission and if trip is not already cancelled #}
-        {% if can_modify and object.status.id != 43 %}
-            <a class="btn btn-admin" href="{% url 'travel:trip_cancel' object.id view.kwargs.type %}">
-                {% trans "Cancel this Trip" %}
-            </a>
-        {% endif %}
-
-
-        {% if can_modify %}
-
-            {% if object.trip_requests.count %}
-                {% trans "You cannot delete a trip that is currently tagged on a trip request." as trip_delete_text %}
-                {% echo "disabled" as delete_disabled_var %}
-            {% endif %}
-
-            <span data-toggle="tooltip" title="{{ trip_delete_text }}">
-            <a class="btn btn-danger {{ delete_disabled_var }}" href="{% url 'travel:trip_delete' object.id view.kwargs.type %}">
-                {% trans "Delete" %}
-            </a>
-            </span>
-        {% endif %}
+      <a v-if="canModify && trip.status !== 43" class="btn btn-admin" href="{% url 'travel:trip_cancel' object.id %}{{ view.get_query_string }}">
+        {% trans "Cancel this Trip" %}
+      </a>
+      <a v-if="canModify && trip.requests.length === 0" class="btn btn-danger" href="{% url 'travel:trip_delete' object.id %}{{ view.get_query_string }}">
+        {% trans "Delete" %}
+      </a>
+      <a class="btn btn-success" href="{% url 'travel:request_new' %}?{{ view.get_query_string }}&trip={{ object.id }}">
+        {% trans "Start a Request" %}
+      </a>
     </div>
+    <div v-if="!showAdminNotesForm" class="btns mb-3">
+    </div>
+    <div class="mb-3 card admin-notes" v-if="trip.admin_notes_html && !showAdminNotesForm">
+      <div class="card-header">{% trans "Administrative Notes" %}</div>
+      <div class="card-body">
+        <p class="card-text" v-html="trip.admin_notes_html"></p>
+      </div>
+    </div>
+    {% include "travel/common/_trip_detail.html" %}
+    <div v-if="isNCRAdmin || (!trip.is_adm_approval_required && isAdmin)">
+      {% include "travel/common/_travellers.html" %}
+    </div>
+    <div v-if="trip.is_adm_approval_required && isNCRAdmin">
+      {% include "travel/common/_reviewers.html" %}
+    </div>
+  </div>
+{% endblock %}
 
 
-
-
-    {# Trip detail #}
-
-    {% if object.admin_notes %}
-        <strong>
-            {% trans "ADMINISTRATIVE NOTES" %}
-        </strong>
-        <div class="mb-3 card admin_notes">
-            {{ object.admin_notes_html|safe }}
-        </div>
-
-    {% endif %}
-
-    {% include "travel/_trip_detail.html" %}
-
-    {% if is_adm_admin %}
-        {% if trip.is_adm_approval_required %}
-            {% include "travel/_trip_reviewers.html" %}
-        {% endif %}
-    {% endif %}
-
-
+{% block body_js %}
+  {{ block.super }}
+  <script type="application/javascript">
+  let isReview = false;
+  </script>
+  {% localize off %}
+    {% include "travel/common/_trip_script.html" %}
+  {% endlocalize %}
 {% endblock %}

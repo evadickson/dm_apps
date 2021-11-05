@@ -45,12 +45,18 @@ def callback(request):
 
     # Get the user's profile
     user = get_user(token)
-    my_email = user.get("mail")
+    my_email = user.get("mail") if user.get("mail") else user.get("userPrincipalName")
+    my_first_name = user.get("givenName")
+    my_last_name = user.get("surname")
+    my_job = user.get("jobTitle")
+    my_phone = user.get("businessPhones")
+
     try:
         my_user = User.objects.get(email__iexact=my_email)
+        my_user.first_name = my_first_name
+        my_user.last_name = my_last_name
+        my_user.save()
     except User.DoesNotExist:
-        my_first_name = user.get("givenName")
-        my_last_name = user.get("surname")
         my_user = User.objects.create(
             username=my_email,
             email=my_email,
@@ -59,6 +65,16 @@ def callback(request):
             is_active=True,
             password="pbkdf2_sha256$120000$ctoBiOUIJMD1$DWVtEKBlDXXHKfy/0wKCpcIDYjRrKfV/wpYMHKVrasw=",
         )
+    finally:
+        my_profile = my_user.profile
+        my_profile.position_eng = my_job
+        my_profile.position_fre = my_job
+        my_profile.phone = my_phone
+        try:
+            my_profile.save()
+        except:
+            print("there was an error in trying to copy over the user's profile data from AAD")
+
     login(request, my_user)
     return HttpResponseRedirect(reverse('index'))
 
@@ -206,7 +222,6 @@ def signup(request):
     if request.method == 'POST':
         form = forms.SignupForm(request.POST)
         if form.is_valid():
-            print(123)
             user = form.save(commit=False)
             user.username = user.email
             user.is_active = False
@@ -224,10 +239,12 @@ def signup(request):
             custom_send_mail(
                 html_message=message,
                 subject=mail_subject,
-                recipient_list=[to_email,],
+                recipient_list=[to_email, ],
                 from_email=from_email,
             )
-            return HttpResponse('Please confirm your email address to complete the registration')
+            return HttpResponse(_('A verification email was just send to {email_address}. In order to complete your registration, please follow the link'
+                                  ' in the message. <br><br>If the email does not appear within 1-2 minutes, please be sure to check your junk mail folder. '
+                                  '<br><br>The activation link will only remain valid for a limited period of time.').format(to_email))
     else:
         form = forms.SignupForm()
     return render(request, 'registration/signup.html', {'form': form})
@@ -270,6 +287,13 @@ class UserPasswordResetConfirmView(PasswordResetConfirmView):
         messages.success(self.request,
                          "Your password has been successfully reset! Please try logging in with your new password.")
         return reverse('index')
+
+    def form_valid(self, form):
+        super().form_valid(form)
+        user = form.save(commit=False)
+        user.is_active = True
+        user.save()
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class RequestAccessFormView(LoginRequiredMixin, FormView):

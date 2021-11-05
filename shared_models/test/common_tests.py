@@ -2,8 +2,10 @@ import os
 
 from django.conf import settings
 from django.test import TestCase
+from django.contrib.messages import get_messages
 from django.urls import resolve, reverse
 from django.utils.translation import activate
+from html2text import html2text
 
 from shared_models.test.SharedModelsFactoryFloor import UserFactory, GroupFactory
 
@@ -76,7 +78,7 @@ class CommonTest(TestCase):
             self.client.logout()
 
     def assert_non_public_view(self, test_url, locales=('en', 'fr'), expected_template=None, user=None,
-                               expected_code=200, login_search_term=None):
+                               expected_code=200, login_search_term=None, bad_user_list=[]):
         """
         This test will ensure a view requires a user to be logged in in order to access it. Part 1, will test to see
         what happens when an anonymous user tries accessing the url. Part 2 attempt the same this with a logged in user.
@@ -87,6 +89,7 @@ class CommonTest(TestCase):
         :param expected_code: the expected http response code
         :param user: an optional user to use for the second part of this test
         :param login_search_term: the search term to use when confirming a login redirect
+        :param bad_user_list: a list of users to check to make sure that they do not have access
         """
 
         # perform this test for each locale
@@ -104,7 +107,18 @@ class CommonTest(TestCase):
             # we are expecting to see the login url
             self.assertIn(f"{login_url}", response.url)
 
-            # PART 2: try with a logged in user. user the User provided in args, if available
+            # PART 2: try accessing with the bad users
+            for u in bad_user_list:
+                # make sure there is no one already logged in
+                self.client.logout()
+                self.get_and_login_user(user=u)
+                response = self.client.get(test_url)
+                # a 403 response would be expected here
+                possibility_1 = 403 == response.status_code
+                possibility_2 = 302 == response.status_code and "denied" in response.url
+                self.assertTrue(possibility_1 or possibility_2)
+
+            # PART 3: try with a logged in user. user the User provided in args, if available
             # login a random user if one was not provided by args
             self.get_and_login_user(user=user)
 
@@ -257,7 +271,7 @@ class CommonTest(TestCase):
         self.assertEquals(test_view, expected_form_class)
 
     def assert_success_url(self, test_url, data=None, user=None, expected_url_name=None, expected_success_url=None,
-                           use_anonymous_user=False, file_field_name=None):
+                           use_anonymous_user=False, file_field_name=None, expected_code=302):
         """
         test that upon a successful form the view redirects to the expected success url
         :param test_url: URL being tested
@@ -287,12 +301,12 @@ class CommonTest(TestCase):
         if response.context and 'form' in response.context:
             # If the data in this test is invaild the response will be invalid
             self.assertTrue(response.context_data['form'].is_valid(),
-                            msg=f"Test data was likely invalid. /nHere's the error log from the form:"
-                                f" {response.context_data['form'].errors}/n"
-                                f"Here's the data from the form:{response.context_data['form'].data}")
+                            msg=f"\n\nTest data was likely invalid. \n\nHere's the error log from the form:\n"
+                                f" {html2text(str(response.context_data['form'].errors))}"
+                                f"Here's the data from the form:\n{response.context_data['form'].data}")
 
         # should always result in a redirect response
-        self.assertEquals(302, response.status_code)
+        self.assertEquals(expected_code, response.status_code)
 
         # if a url name was provided
         if expected_url_name:
@@ -300,6 +314,30 @@ class CommonTest(TestCase):
 
         if expected_success_url:
             self.assertRedirects(response=response, expected_url=expected_success_url)
+
+    def assert_message_returned_url(self, test_url, data=None, user=None, expected_messages=None,
+                                    use_anonymous_user=False):
+        """
+        test that upon a successful form the view redirects to the expected success url
+        :param test_url: URL being tested
+        :param data: optional data to use when submitting the form
+        :param user: an optional user that can be used to generate the response
+        :param expected_url_name: the name of the url to which a successful submission should be redirected
+        :param use_anonymous_user: should this function be run without logging in a uer? if so, set this optional arg
+        :param expected_messages: List of messages expected to be returned from the form_valid method
+        data will be stored in
+        """
+        # arbitrarily activate the english locale
+        activate('en')
+
+        # if a user is provided in the arg, log in with that user
+        if not use_anonymous_user:
+            self.get_and_login_user(user)
+
+        response = self.client.post(test_url, data=data)
+        messages = list(get_messages(response.wsgi_request))
+        for m in expected_messages:
+            self.assertIn(m, [m.message for m in messages])
 
     def assert_form_valid(self, form_class, data, instance=None, initial=None):
         """
@@ -314,8 +352,8 @@ class CommonTest(TestCase):
         else:
             form = form_class(data=data, initial=initial)
         self.assertTrue(form.is_valid(),
-                        msg=f"Test data was likely invalid. /nHere's the error log from the form: {form.errors}/n"
-                            f"Here's the data from the form:{form.data}")
+                        msg=f"\n\nTest data was likely invalid. \n\nHere's the error log from the form: \n{html2text(str(form.errors))}"
+                            f"Here's the data from the form:\n{form.data}")
 
     def assert_form_invalid(self, form_class, data, instance=None, initial=None):
         """
@@ -371,7 +409,7 @@ class CommonTest(TestCase):
 
     def assert_mandatory_fields(self, model, field_names):
         """
-        assert that a field within a model is mandatory (blank=True, null=True)
+        assert that a field within a model is mandatory (blank=False, null=False)
         :param model: the model class to test
         :param field_names: list of  field names to check
         """
@@ -382,7 +420,7 @@ class CommonTest(TestCase):
 
     def assert_non_mandatory_fields(self, model, field_names):
         """
-        assert that a field within a model is not mandatory (blank=False, null=False)
+        assert that a field within a model is not mandatory (blank=True, null=True)
         :param model: the model class to test
         :param field_names: list of  field names to check
         """
@@ -397,7 +435,8 @@ class CommonTest(TestCase):
         :param model: the model class to test
         :param fields: list of  field names to check
         """
-        model_field_list = [field.name for field in model._meta.fields]
+        model_field_list = [field.name for field in model._meta.fields] + \
+                           [field.name for field in model._meta.many_to_many]
         for field in fields:
             self.assertIn(field, model_field_list)
 

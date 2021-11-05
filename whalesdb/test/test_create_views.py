@@ -1,21 +1,21 @@
-from django.test import tag
-from django.urls import reverse_lazy
+import os
+import datetime
 
+from django.test import TestCase, tag, RequestFactory
+from django.urls import reverse_lazy
 from django.core.files.base import ContentFile
-from six import BytesIO
 from django.utils.translation import activate
 
-from django.test import TestCase
-
+from six import BytesIO
 from PIL import Image
 
+from whalesdb import views, forms, models
+from whalesdb.test import WhalesdbFactoryFloor as Factory
 from whalesdb.test.common_views import CommonCreateTest
 
-from whalesdb import views, forms, models
-
-import os
-from whalesdb.test import WhalesdbFactoryFloor as Factory
 from shared_models.test import SharedModelsFactoryFloor as SharedFactory
+
+req_factory = RequestFactory()
 
 
 @tag('cru', 'create')
@@ -85,7 +85,11 @@ class TestEccCreate(CommonCreateTest, TestCase):
 
     def setUp(self):
         super().setUp()
-        self.eca = Factory.EcaFactory()
+        eqt = models.EqtEquipmentTypeCode.objects.get(pk=4)
+        emm = Factory.EmmFactory(eqt=eqt)
+        eca_hydrophone = Factory.EqpFactory(emm=emm)
+
+        self.eca = Factory.EcaFactory(eca_hydrophone=eca_hydrophone)
 
         self.data = Factory.EccFactory.get_valid_data()
 
@@ -497,27 +501,6 @@ class TestRstCreate(CommonCreateTest, TestCase):
         self.assertIn("form", response.context)
         self.assertIn("rsc", response.context['form'].initial)
         self.assertEquals(self.rsc_id, response.context['form'].initial['rsc'])
-
-
-@tag('rtt', 'create')
-class TestRttCreate(CommonCreateTest, TestCase):
-
-    rtt_id = 1
-
-    def setUp(self):
-        super().setUp()
-
-        self.data = Factory.RttFactory.get_valid_data()
-        self.test_url = reverse_lazy('whalesdb:create_rtt')
-
-        # Since this is intended to be used as a pop-out form, the html file should start with an underscore
-        self.test_expected_template = 'shared_models/shared_entry_form.html'
-
-        self.expected_view = views.RstCreate
-
-        self.expected_form = forms.RstForm
-
-        self.expected_success_url = reverse_lazy("whalesdb:list_rtt")
 
 
 @tag('ste', 'create')

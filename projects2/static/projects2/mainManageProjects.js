@@ -1,7 +1,9 @@
+Vue.component('v-select', VueSelect.VueSelect);
 var app = new Vue({
   el: '#app',
   delimiters: ["${", "}"],
   data: {
+    showSidebar: true,
     currentUser: {},
     isAdminOrMgmt: false,
     hover: false,
@@ -44,10 +46,14 @@ var app = new Vue({
     filter_division: "",
     filter_status: "",
 
-    showColumnAllocation: true,
+    showColumnAllocation: false,
     showColumnLeads: true,
     showColumnHidden: true,
-    showColumnScore: true,
+    showColumnScore: false,
+    showColumnLastModified: false,
+    showColumnOM: false,
+    showColumnSalary: false,
+    showColumnCapital: false,
 
     fiscalYears: [],
     tags: [],
@@ -55,6 +61,8 @@ var app = new Vue({
     functionalGroups: [],
     fundingSources: [],
     sections: [],
+    regions: [],
+    divisions: [],
 
     // modal
     projectYear2Review: {},
@@ -83,33 +91,39 @@ var app = new Vue({
 
       apiService(`/api/project-planning/regions/${query}`).then(response => this.regions = response)
 
-      if (this.filter_region && this.filter_region !== "") query += `;region=${this.filter_region}`
+      if (this.filter_region && this.filter_region !== "") query += `&region=${this.filter_region}`
       apiService(`/api/project-planning/divisions/${query}`).then(response => this.divisions = response)
 
-      if (this.filter_division && this.filter_division !== "") query += `;division=${this.filter_division}`
+      if (this.filter_division && this.filter_division !== "") query += `&division=${this.filter_division}`
       apiService(`/api/project-planning/sections/${query}`).then(response => this.sections = response)
 
-      if (this.filter_section && this.filter_section !== "") query += `;section=${this.filter_section}`
+      if (this.filter_section && this.filter_section !== "") query += `&section=${this.filter_section}`
       apiService(`/api/project-planning/functional-groups/${query}`).then(response => this.functionalGroups = response)
 
+    },
+
+    getFilterString() {
+        endpoint = `user=true&` +
+          `id=${this.filter_id}&` +
+          `title=${this.filter_title}&` +
+          `staff=${this.filter_staff}&` +
+          `fiscal_year=${this.filter_fiscal_year}&` +
+          `tag=${this.filter_tag}&` +
+          `theme=${this.filter_theme}&` +
+          `functional_group=${this.filter_functional_group}&` +
+          `funding_source=${this.filter_funding_source}&` +
+          `region=${this.filter_region}&` +
+          `division=${this.filter_division}&` +
+          `section=${this.filter_section}&` +
+          `status=${this.filter_status}&`;
+
+        return endpoint
     },
 
     getProjectYearsEndpoint(pageSize = 45) {
       endpoint = `/api/project-planning/project-years/`;
       // apply filters
-      endpoint += `?page_size=${pageSize};user=true;` +
-          `id=${this.filter_id};` +
-          `title=${this.filter_title};` +
-          `staff=${this.filter_staff};` +
-          `fiscal_year=${this.filter_fiscal_year};` +
-          `tag=${this.filter_tag};` +
-          `theme=${this.filter_theme};` +
-          `functional_group=${this.filter_functional_group};` +
-          `funding_source=${this.filter_funding_source};` +
-          `region=${this.filter_region};` +
-          `division=${this.filter_division};` +
-          `section=${this.filter_section};` +
-          `status=${this.filter_status};`
+      endpoint += `?page_size=${pageSize}&` + this.getFilterString()
       return endpoint
 
     },
@@ -170,7 +184,7 @@ var app = new Vue({
                     pyIds.push(response.results[i].id)
                   }
 
-                  let endpoint2 = `/api/project-planning/fte-breakdown/?year=${this.filter_fiscal_year};ids=${pyIds}`;
+                  let endpoint2 = `/api/project-planning/fte-breakdown/?year=${this.filter_fiscal_year}&ids=${pyIds}`;
                   apiService(endpoint2)
                       .then(response => {
                         this.staff_loading = false;
@@ -286,7 +300,7 @@ var app = new Vue({
       this.showReviewModal = true;
       if (which === "approval") {
         this.approvalModal = true;
-        this.projectYear2Review.review.email_update = true
+        this.projectYear2Review.review.approval_email_update = true
       }
     },
 
@@ -307,6 +321,9 @@ var app = new Vue({
       staff.showRelatedProjects = !staff.showRelatedProjects
       this.$forceUpdate()
     },
+    generateReports(url, tag) {
+        window.open(url + "?" + this.getFilterString(), tag, 'toolbar=0,status=0,height=500,width=600');
+    }
   },
 
   filters: {

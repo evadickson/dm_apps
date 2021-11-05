@@ -40,6 +40,7 @@ class TestDepList(CommonListTest, TestCase):
         self.assertEqual("whalesdb:create_dep", response.context['create_url'])
         self.assertEqual("whalesdb:details_dep", response.context['details_url'])
         self.assertEqual("whalesdb:update_dep", response.context['update_url'])
+        self.assertEqual("whalesdb:delete_dep", response.context['delete_url'])
 
 
 @tag('eca', 'filter')
@@ -164,15 +165,6 @@ class TestRscList(CommonListTest, TestCase):
         self.assertEqual("whalesdb:details_rsc", response.context['details_url'])
 
         self.assertEquals(True, response.context["editable"])
-
-
-@tag('rtt', 'filter')
-class TestRttList(CommonListTest, TestCase):
-
-    def setUp(self):
-        super().setUp()
-
-        self.test_url = reverse_lazy('whalesdb:list_rtt')
 
 
 @tag('stn', 'filter')

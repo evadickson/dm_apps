@@ -10,6 +10,7 @@ urlpatterns = [
 
     # DFO ORGANIZATION #
     path('dfo-org/', views.IndexTemplateView.as_view(), name="index"),
+    path('dfo-org/spreadsheet/', views.OrgSpreadsheetTemplateView.as_view(), name="org_spreadsheet"),
 
     # SECTION #
     ###########
@@ -31,6 +32,14 @@ urlpatterns = [
     path('branch/<int:pk>/update/', views.BranchUpdateView.as_view(), name="branch_edit"),  # TESTED
     path('branch/<int:pk>/delete/', views.BranchDeleteView.as_view(), name="branch_delete"),  # TESTED
     path('branch/new/', views.BranchCreateView.as_view(), name="branch_new"),  # TESTED
+
+    # SECTORS #
+    ############
+    path('sectors/', views.SectorListView.as_view(), name="sector_list"),  # TESTED
+    path('sector/<int:pk>/update/', views.SectorUpdateView.as_view(), name="sector_edit"),  # TESTED
+    path('sector/<int:pk>/delete/', views.SectorDeleteView.as_view(), name="sector_delete"),  # TESTED
+    path('sector/new/', views.SectorCreateView.as_view(), name="sector_new"),  # TESTED
+
 
     # REGION #
     ############
@@ -72,4 +81,8 @@ urlpatterns = [
     path('script/new/', views.ScriptCreateView.as_view(), name="script_new"),  # TESTED
     path('script/<int:pk>/run/', views.run_script, name="run_script"),  # TESTED
 
+    # REPORTS
+    #########
+
+    path('dfo-org/export-report/', views.export_org_report, name="export_org_report"),  # TESTED
 ]

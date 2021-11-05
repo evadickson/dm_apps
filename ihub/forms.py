@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.forms import modelformset_factory
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, gettext_lazy
 
 from lib.functions.custom_functions import listrify
 from masterlist import models as ml_models
@@ -10,7 +10,7 @@ from . import models
 
 chosen_js = {"class": "chosen-select-contains"}
 multi_select_js = {"class": "multi-select"}
-attr_fp_date = {"class": "fp-date", "placeholder": "Click to select a date.."}
+attr_fp_date = {"class": "fp-date", "placeholder": gettext_lazy("Click to select a date..")}
 
 
 class EntryCreateForm(forms.ModelForm):
@@ -27,14 +27,40 @@ class EntryCreateForm(forms.ModelForm):
             'created_by': forms.HiddenInput(),
             'organizations': forms.SelectMultiple(attrs=chosen_js),
             'regions': forms.SelectMultiple(attrs={'class': "multi-select"}),
-            'sectors': forms.SelectMultiple(attrs={'class': "multi-select"}),
+            'sectors': forms.SelectMultiple(attrs=chosen_js),
         }
+
+    def clean_organizations(self):
+        organizations = self.cleaned_data['organizations']
+        if not organizations:
+            raise forms.ValidationError("You must select an organization!")
+        return organizations
+
+    def clean_sectors(self):
+        sector = self.cleaned_data['sectors']
+        if not sector:
+            raise forms.ValidationError("You must select a sector!")
+        return sector
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from ihub.views import get_ind_organizations
-        org_choices_all = [(obj.id, f"{obj} ({listrify(obj.regions.all())})") for obj in get_ind_organizations()]
+        org_choices_all = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in get_ind_organizations()]
         self.fields["organizations"].choices = org_choices_all
+        sector_choices = [(obj.id, f"{obj.region} - {obj.tname}") for obj in ml_models.Sector.objects.all()]
+        self.fields["sectors"].choices = sector_choices
+
+    def clean_organizations(self):
+        organizations = self.cleaned_data['organizations']
+        if not organizations:
+            raise forms.ValidationError("You must select at least one organization!")
+        return organizations
+
+    def clean_sectors(self):
+        sectors = self.cleaned_data['sectors']
+        if not sectors:
+            raise forms.ValidationError("You must select at least one sector!")
+        return sectors
 
 
 class EntryForm(forms.ModelForm):
@@ -47,19 +73,48 @@ class EntryForm(forms.ModelForm):
         ]
         widgets = {
             'initial_date': forms.DateInput(attrs=attr_fp_date),
+            'response_requested_by': forms.DateInput(attrs=attr_fp_date),
             'anticipated_end_date': forms.DateInput(attrs=attr_fp_date),
             'last_modified_by': forms.HiddenInput(),
-            'organizations': forms.SelectMultiple(attrs={'class': "multi-select"}),
+            'organizations': forms.SelectMultiple(attrs=chosen_js),
             'regions': forms.SelectMultiple(attrs={'class': "multi-select"}),
-            'sectors': forms.SelectMultiple(attrs={'class': "multi-select"}),
+            'sectors': forms.SelectMultiple(attrs=chosen_js),
         }
+
+    def clean_organizations(self):
+        organizations = self.cleaned_data['organizations']
+        if not organizations:
+            raise forms.ValidationError("You must select an organization!")
+        return organizations
+
+    def clean_sectors(self):
+        sector = self.cleaned_data['sectors']
+        if not sector:
+            raise forms.ValidationError("You must select a sector!")
+        return sector
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from ihub.views import get_ind_organizations
-        org_choices_all = [(obj.id, obj) for obj in get_ind_organizations()]
+        org_choices_all = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in get_ind_organizations()]
         self.fields["organizations"].choices = org_choices_all
+        sector_choices = [(obj.id, f"{obj.region} - {obj.tname}") for obj in ml_models.Sector.objects.all()]
+        self.fields["sectors"].choices = sector_choices
+        self.fields['initial_date'].widget.format = '%Y-%m-%d'
+        self.fields['anticipated_end_date'].widget.format = '%Y-%m-%d'
+        self.fields['response_requested_by'].widget.format = '%Y-%m-%d'
 
+    def clean_organizations(self):
+        organizations = self.cleaned_data['organizations']
+        if not organizations:
+            raise forms.ValidationError("You must select at least one organization!")
+        return organizations
+
+    def clean_sectors(self):
+        sectors = self.cleaned_data['sectors']
+        if not sectors:
+            raise forms.ValidationError("You must select at least one sector!")
+        return sectors
 
 class NoteForm(forms.ModelForm):
     class Meta:
@@ -88,6 +143,7 @@ class ReportSearchForm(forms.Form):
             (6, _("Engagement Update Log")),
             (7, _("Consultation Instructions (PDF)")),
             (8, _("Consultation Instructions - Mail Merge (xlsx)")),
+            (9, _("Consultation Report (xlsx)")),
         )
         format_choices = (
             (None, "------"),
@@ -95,61 +151,111 @@ class ReportSearchForm(forms.Form):
             ('xlsx', "Excel (xlsx)"),
         )
 
-        org_choices_all = [(obj.id, obj) for obj in get_ind_organizations()]
-        org_choices_has_entry = [(obj.id, obj) for obj in get_ind_organizations() if obj.entries.count() > 0]
-        org_choices_has_ci = [(obj.id, obj) for obj in get_ind_organizations() if hasattr(obj, "consultation_instructions")]
+        entry_region_choices = [(obj.id, str(obj)) for obj in shared_models.Region.objects.filter(entries__isnull=False).distinct()]
+        org_region_choices = [(obj.id, str(obj)) for obj in shared_models.Region.objects.filter(organizations__isnull=False).distinct()]
 
-        sector_choices = [(obj.id, obj) for obj in ml_models.Sector.objects.all() if obj.entries.count() > 0]
+        org_choices_all = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in get_ind_organizations()]
+        org_choices_has_entry = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in get_ind_organizations() if
+                                 obj.entries.count() > 0]
+        org_choices_has_ci = [(obj.id, f'[{listrify(obj.regions.all())}] {obj.full_display_name}') for obj in get_ind_organizations() if
+                              hasattr(obj, "consultation_instructions")]
+
+        sector_choices = [(obj.id, f"{obj.region} - {obj.tname}") for obj in ml_models.Sector.objects.all() if obj.entries.count() > 0]
         status_choices = [(obj.id, obj) for obj in models.Status.objects.all() if obj.entries.count() > 0]
         entry_type_choices = [(obj.id, obj) for obj in models.EntryType.objects.all() if obj.entries.count() > 0]
 
         note_type_choices = list(models.EntryNote.TYPE_CHOICES)
         # we need to modify one of the descriptions...
-        note_type_choices = list(models.EntryNote.TYPE_CHOICES)
-        note_type_choices.remove((models.EntryNote.INTERNAL, 'Internal'))
-        note_type_choices.append((models.EntryNote.INTERNAL, 'Internal (** for internal reports only)'))
-        note_type_choices.remove((models.EntryNote.FOLLOWUP, 'Follow-up (*)'))
+        note_type_choices.remove((models.EntryNote.INTERNAL, _('Internal')))
+        note_type_choices.append((models.EntryNote.INTERNAL, _('Internal (** for internal reports only)')))
+        note_type_choices.remove((models.EntryNote.FOLLOWUP, _('Follow-up (*)')))
 
-        note_status_choices = [(obj.id, obj) for obj in models.Status.objects.all() if obj.entry_notes.count() > 0]
+        note_status_choices = [(obj.id, obj) for obj in models.Status.objects.all() if obj.entry_notes.exists()]
+
+        note_type_choices_all = list(models.EntryNote.TYPE_CHOICES)
+        # we need to modify one of the descriptions...
+        note_type_choices_all.remove((models.EntryNote.INTERNAL, _('Internal')))
+        note_type_choices_all.append((models.EntryNote.INTERNAL, _('Internal (** for internal reports only)')))
 
         self.fields['report'] = forms.ChoiceField(required=True, choices=report_choices)
         self.fields['format'] = forms.ChoiceField(required=False, choices=format_choices)
-        self.fields['from_date'] = forms.CharField(required=False, widget=forms.DateInput(attrs={"type":"date"}))
-        self.fields['to_date'] = forms.CharField(required=False, widget=forms.DateInput(attrs={"type":"date"}))
+        self.fields['from_date'] = forms.CharField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
+        self.fields['to_date'] = forms.CharField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
+        self.fields['org_regions'] = forms.MultipleChoiceField(required=False,
+                                                               label='Only include entries whose organizations belong to the following region(s)',
+                                                               choices=org_region_choices,
+                                                               help_text="Leave blank for all.",
+                                                               widget=forms.SelectMultiple(attrs=chosen_js)
+                                                               )
+
+        self.fields['entry_regions'] = forms.MultipleChoiceField(required=False,
+                                                                 label='Only include entries belonging to the following region(s)',
+                                                                 choices=entry_region_choices,
+                                                                 help_text="Leave blank for all",
+                                                                 widget=forms.SelectMultiple(attrs=chosen_js)
+                                                                 )
         self.fields['sectors'] = forms.MultipleChoiceField(required=False,
-                                                           label='List of sectors (w/ entries) - Leave blank for all',
-                                                           choices=sector_choices)
+                                                           label='List of sectors (w/ entries)',
+                                                           choices=sector_choices,
+                                                           help_text="Leave blank for all",
+                                                           widget=forms.SelectMultiple(attrs=chosen_js)
+                                                           )
         self.fields['organizations'] = forms.MultipleChoiceField(required=False,
-                                                                 label='List of organizations (w/ entries) - Leave blank for all',
-                                                                 choices=org_choices_has_entry)
+                                                                 label='List of organizations (w/ entries)',
+                                                                 choices=org_choices_has_entry,
+                                                                 help_text="Leave blank for all",
+                                                                 widget=forms.SelectMultiple(attrs=chosen_js)
+                                                                 )
         self.fields['orgs_w_consultation_instructions'] = forms.MultipleChoiceField(required=False,
-                                                                                    label='List of organizations (w/ consultation instructions) - Leave blank for all',
-                                                                                    choices=org_choices_has_ci)
+                                                                                    label='List of organizations (w/ consultation instructions)',
+                                                                                    choices=org_choices_has_ci,
+                                                                                    help_text="Leave blank for all",
+                                                                                    widget=forms.SelectMultiple(attrs=chosen_js)
+                                                                                    )
         self.fields['statuses'] = forms.MultipleChoiceField(required=False,
-                                                            label='Status - Leave blank for all',
+                                                            label='Status(es)',
                                                             choices=status_choices,
+                                                            help_text="Leave blank for all",
+                                                            widget=forms.SelectMultiple(attrs=chosen_js)
+
                                                             )
         self.fields['entry_types'] = forms.MultipleChoiceField(required=False,
-                                                               label='Entry Type - Leave blank for all',
+                                                               label='Entry Type(s)',
                                                                choices=entry_type_choices,
+                                                               help_text="Leave blank for all",
+                                                               widget=forms.SelectMultiple(attrs=chosen_js)
+
                                                                )
-        self.fields['single_org'] = forms.ChoiceField(required=False, label='Organization', choices=org_choices_all)
+        self.fields['single_org'] = forms.ChoiceField(
+            required=False, label='Organization', choices=org_choices_all, widget=forms.Select(attrs=chosen_js)
+        )
 
         self.fields['entry_note_types'] = forms.MultipleChoiceField(required=False,
-                                                                           label='Include which types of entry notes (blank for all)',
-                                                                           choices=note_type_choices)
+                                                                    label='Include which types of entry notes',
+                                                                    choices=note_type_choices,
+                                                                    help_text="Leave blank for all",
+                                                                    widget=forms.SelectMultiple(attrs=chosen_js)
+                                                                    )
+        self.fields['entry_note_types_all'] = forms.MultipleChoiceField(required=False,
+                                                                        label='Include which types of entry notes',
+                                                                        choices=note_type_choices_all,
+                                                                        help_text="Leave blank for all",
+                                                                        widget=forms.SelectMultiple(attrs=chosen_js)
+                                                                        )
         self.fields['entry_note_statuses'] = forms.MultipleChoiceField(required=False,
-                                                                             label='Include entry notes with which statuses (blank for all)',
-                                                                             choices=note_status_choices)
+                                                                       label='Include entry notes with which status(es)',
+                                                                       choices=note_status_choices,
+                                                                       help_text="Leave blank for all",
+                                                                       widget=forms.SelectMultiple(attrs=chosen_js)
+                                                                       )
         self.fields['report_title'] = forms.CharField(required=False)
 
 
 class OrganizationForm(forms.ModelForm):
     class Meta:
         model = ml_models.Organization
-        exclude = ["date_last_modified", "old_id"]
+        exclude = ["date_last_modified", "old_id", 'last_modified_by']
         widgets = {
-            'last_modified_by': forms.HiddenInput(),
             # multiselects
             'grouping': forms.SelectMultiple(attrs=multi_select_js),
             'regions': forms.SelectMultiple(attrs=multi_select_js),
@@ -183,10 +289,8 @@ class PersonForm(forms.ModelForm):
             "fax",
             "language",
             "notes",
-            "last_modified_by",
         ]
         widgets = {
-            'last_modified_by': forms.HiddenInput(),
             'notes': forms.Textarea(attrs={"rows": "3"}),
         }
 
@@ -226,7 +330,7 @@ class MemberForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={"rows": "3"}),
         }
         labels = {
-            'person': "Select a contact",
+            'person': gettext_lazy("Select a contact"),
         }
 
     def __init__(self, *args, **kwargs):
