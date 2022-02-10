@@ -1,0 +1,30 @@
+{% load i18n %}
+
+<li class="nav-item"><a class="nav-link" href="{% url 'lengths:index' %}">
+  {% trans "Home" %}
+</a></li>
+
+<li class="nav-item">
+  <a class="nav-link" href="#"> {# {% url 'lengths:reports' %} #}
+    {% trans "Reports" %}
+  </a>
+</li>
+
+{% if is_admin %}
+  <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
+       aria-haspopup="true" aria-expanded="false">
+      {% trans "Admin" %}
+    </a>
+    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+      <a class="dropdown-item" href="{% url 'lengths:manage_lengths_users' %}" target="_blank">
+        {% trans "User Permissions" %}
+      </a>
+    </div>
+  </li>
+{% endif %}
+
+
+
+
+

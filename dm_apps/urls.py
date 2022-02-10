@@ -21,7 +21,6 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
-from accounts import views as acc_views
 from . import views as views
 
 urlpatterns = [
@@ -228,6 +227,12 @@ else:
 
 if settings.INSTALLED_APPS.count("res"):
     urlpatterns += i18n_patterns(path('res-sub/', include('res.urls')),
+                                 prefix_default_language=True)
+else:
+    print("not connecting res app")
+
+if settings.INSTALLED_APPS.count("lengths"):
+    urlpatterns += i18n_patterns(path('lengths/', include('lengths.urls')),
                                  prefix_default_language=True)
 else:
     print("not connecting res app")

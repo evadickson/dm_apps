@@ -47,6 +47,7 @@ APP_DICT = {
     'maret': dict(name="Maret"),
     'fisheriescape': dict(name="Fisheries Landscape Tool"),
     'res': dict(name="SE-RES Career Progression Dossier App"),
+    'lengths': dict(name="Commercial Length-Frequencies Archive"),
 }
 
 # Deal with fake apps...

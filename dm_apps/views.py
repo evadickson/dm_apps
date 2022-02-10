@@ -443,6 +443,19 @@ def get_app_dict(request):
     except NoReverseMatch:
         pass
 
+    try:
+        app_dict["lengths"] = {
+            "title": _("Commercial Length-frequency Archive"),
+            "description": _("DFO archive for length-frequency data and metadata."),
+            "status": "dev",
+            "access": "login-required",
+            "url": reverse('lengths:index'),
+            "icon_path": 'img/icons/triangular-ruler.png',
+            "region": "regional",
+        }
+    except NoReverseMatch:
+        pass
+
     return OrderedDict(app_dict)
 
 
