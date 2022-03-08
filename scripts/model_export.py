@@ -73,7 +73,7 @@ def export_ppt_fixtures(output_path=None):
     querysets = []
     users = None
 
-    query_years = [2022,2023,]
+    query_years = [2022]
 
     """ ppt_models.ProjectYear """
     print("Project years")
@@ -131,6 +131,8 @@ def export_ppt_fixtures(output_path=None):
     """ ---> ppt_models.CSRFPriority """
     print("CSRFPriority")
     csrf_pri = ppt.models.CSRFPriority.objects.all()
+    csrf_subTheme = ppt.models.CSRFSubTheme.objects.all()
+    csrf_theme = ppt.models.CSRFTheme.objects.all()
 
     """ --> shared_models.FiscalYear """
     print("FiscalYear")
@@ -194,6 +196,8 @@ def export_ppt_fixtures(output_path=None):
     querysets.append(all_code)
     querysets.append(rep)
     querysets.append(fis_year)
+    querysets.append(csrf_theme)
+    querysets.append(csrf_subTheme)
     querysets.append(csrf_pri)
     querysets.append(csrf)
     querysets.append(org_loc)
