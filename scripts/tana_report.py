@@ -63,6 +63,7 @@ def generate_susan_report():
             'Title',
             'Division',
             'Section',
+            'Dates',
             'Functional group',
             'Start date of project',
             'End date of project',
@@ -70,19 +71,40 @@ def generate_susan_report():
             'Project leads',
             'Project overview',
 
+            "Year specific priorities",
+            "Activity Type",
+            "Theme",
+            "Primary Funding",
+
+            'Instrumentation to Deploy',
+            'Instrument Owner',
+            'Data Generated/Collected?',
+            'Data Type',
+            'Data Products',
+            'Data Open-Data Eligible',
+            'Data Storage',
+            'Data management',
+
             'Des. Need for Vehicle',
             'Ship',
             'COIP number',
             'Insturments',
 
+            'Has Field component',
+            'Needs ABL?',
             'Requires Field Support Staff',
             'Support Details',
+            'Special I.T needs',
+            'Additional Notes',
 
             'Requires Lab Work',
             'Is Lab Space Required',
             'Specialized Support',
             'Other Lab Requirements',
 
+            'Funding Sourses',
+            'Hidden from other users',
+            'tags/keywords',
         ])
 
         for p in pro_div:
@@ -92,13 +114,43 @@ def generate_susan_report():
             if leads_as_users:
                 leads = ", ".join([u.first_name + " " + u.last_name for u in leads_as_users])
 
-            writer.writerow([p.project.pk, status.get(p.status), p.project.title, p.project.section.division, p.project.section, p.project.functional_group,
-                             p.start_date, p.end_date, years, leads, p.project.overview,
+            funding = ""
+            if p.get_funding_sources():
+                funding = ", ".join([str(fs) for fs in p.get_funding_sources()])
+
+            tags = ""
+            if p.project.tags.all():
+                tags = ", ".join([str(t) for t in p.project.tags.all()])
+
+            refs = ""
+            if p.project.references:
+                refs = ", ".join([str(r) for r in p.project.references.all()])
+
+            if p.project.functional_group:
+                theme = p.project.functional_group.theme
+
+            writer.writerow([p.project.pk, status.get(p.status), p.project.title, p.project.section.division,
+                             p.project.section, p.dates, p.project.functional_group, p.start_date, p.end_date, years, leads,
+                             p.project.overview,
+
+                             p.instrumentation, p.owner_of_instrumentation,
+
+                             p.priorities, p.project.activity_type, theme,
+                             p.project.default_funding_source,
+
+                             p.has_data_component, p.data_collected, p.data_products, p.open_data_eligible,
+                             p.data_storage_plan, p.data_management_needs,
 
                              p.vehicle_needs, p.ship_needs, p.coip_reference_id, p.instrumentation,
+
+                             p.has_field_component, p.requires_abl_services,
                              p.requires_field_staff, p.field_staff_needs,
+                             p.it_needs, p.additional_notes,
+
                              p.has_lab_component, p.requires_lab_space,
-                             p.requires_other_lab_support, p.other_lab_support_needs
+                             p.requires_other_lab_support, p.other_lab_support_needs,
+
+                             funding, p.project.is_hidden, tags, refs,
                              ])
 
         f.close()
